@@ -465,7 +465,7 @@ static proc printChartmap(chartmap phi)
    def R=phi.preim.in;
    def S=phi.im.in;
    int i,k;
-   
+
    setring R;
    "Preimage ring: ("+string(R)+")/("+string(phi.preim.value)+")"; 
    "Domain: D("+string(phi.dom)+")";   
@@ -2858,6 +2858,7 @@ EXAMPLE: example blowUp;  shows an example
 			   I[k]=x(k);
 			}
 			map g=S,I;
+			phi.dom=ideal();
 			kill I;
 			
 			setring S;
@@ -2937,7 +2938,7 @@ EXAMPLE: example blowUp;  shows an example
 			   kill F,G;
 			   setring S;
 			}
-			
+
 			L=L+list(phi);
 			
 			setring S;
@@ -2946,6 +2947,7 @@ EXAMPLE: example blowUp;  shows an example
 			setring T;
 			kill g;
 			
+			setring R;
 			kill phi,psi,S,SS,T,TT;
 		 }
 		 else
