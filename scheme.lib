@@ -95,6 +95,7 @@ LIB "primdec.lib";
 LIB "matrix.lib";
 LIB "grobcov.lib";
 LIB "elim.lib";
+LIB "presolve.lib";
 
 static proc mod_init()
 {
@@ -2752,6 +2753,8 @@ EXAMPLE: example blowUp;  shows an example
    }
    pi.center=C;
    
+   // Computation of the Charts of the blow up
+
    int n=size(X.cover);
    for(i=1; i<=n; i=i+1)
    {
@@ -2810,7 +2813,8 @@ EXAMPLE: example blowUp;  shows an example
 			   I=I+ideal(J[j]*y(k)-J[k]);
 			}
 		 }
-		 U.value=sat(I,ideal(J[j]))[1];
+		 I=sat(I,ideal(J[j]))[1];
+		 U.value=I;
 		 phi.preim=U;
 		 Bcover=Bcover+list(U);
 		 maps=maps+list(list(phi,i,j));
@@ -2823,6 +2827,8 @@ EXAMPLE: example blowUp;  shows an example
 	  
 	  kill R,m,l,j;
    }
+
+   // Computation of the gluing maps of the blow up
    
    pi.maps=maps;
    B.cover=Bcover;
@@ -3011,6 +3017,68 @@ EXAMPLE: example blowUp;  shows an example
 	  }
 	  B.maps=B.maps+list(L);
    }
+
+   // Elimination of variables
+
+   for(i=1; i<=size(B.cover); i=i+1)
+   {
+	  def S=B.cover[i].in;
+	  setring S;
+	  ideal I=B.cover[i].value;
+	  ideal Ie=eD[i].value;
+	  list elim=elimpart(I);
+	  ideal Id=elim[5];
+	  n=size(elim[2]);
+	  if(n>0)
+	  {
+		 chartmap phi,psi;
+		 phi.im=B.cover[i];
+		 psi.preim=B.cover[i];
+		 psi.dom=1;
+		 psi.ratFuncs[1]=list();
+		 for(j=1; j<=nvars(S); j=j+1)
+		 {
+			if(elim[4][j]!=0)
+			{   
+				psi.ratFuncs[1]=psi.ratFuncs[1]+list(makeratFunc(var(j)));
+			}
+		 }
+		 def T=tolessvars(elim[4]);
+
+		 setring T;
+		 ideal Im=imap(S,Id);
+		 map f=S,Im;
+		 ideal J=f(I);
+		 ideal Je=f(Ie);
+		 chart U=J;
+		 chart Ue=Je;
+		 phi.preim=U;
+		 psi.im=U;
+		 phi.dom=1;
+		 phi.ratFuncs[1]=list();
+		 for(j=1; j<=nvars(S); j=j+1)
+		 {
+			phi.ratFuncs[1]=phi.ratFuncs[1]+list(makeratFunc(Im[j]));
+		 }
+
+		 B.cover[i]=U;
+		 eD[i]=Ue;
+		 for(j=1; j<=size(B.cover); j=j+1)
+		 {
+			B.maps[i][j]=B.maps[i][j]*phi;
+			B.maps[j][i]=psi*B.maps[j][i];
+		 }
+
+		 kill f,J,Je,Im;
+		 kill T,phi,psi,U,Ue;
+	  }
+
+	  setring S;
+	  kill I,Ie,Id,elim;
+	  kill S;
+   }
+
+   // Computation of the exceptional divisor
   
    E.cover=eD;
    E.maps=B.maps;
