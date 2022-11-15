@@ -102,7 +102,11 @@ static proc mod_init()
   newstruct("chart","ring in, ideal value");
   newstruct("chartmap","chart preim, chart im, ideal dom, list ratFuncs");
   newstruct("scheme","list cover, list maps");
+  newstruct("affVariety","ring in, ideal value");
+  newstruct("projVariety","ring in, ideal value");
   newstruct("morphism","scheme preim, scheme im, list chartmaps");
+  newstruct("affRatMap","affVariety preim, affVariety im, list ratFuncs");
+  newstruct("projRatMap","projVariety preim, projVariety im, list ratFuncs");
   newstruct("divisor","scheme space, list schemes, list mults");
   newstruct("ratFunc","ring in, poly num, poly den");
   newstruct("blowUpMap","scheme blow, scheme base, scheme exDiv, scheme center, list maps");
@@ -118,6 +122,12 @@ static proc mod_init()
   system("install","chart","!=",notequalChart,2);
   system("install","chartmap","==",equalChartmap,2);
   system("install","chartmap","!=",notequalChartmap,2);
+  system("install","affVariety","=",makeaffVar,1);
+  system("install","affVariety","print",printAffVariety,1);
+  system("install","projVariety","=",makeprojVar,1);
+  system("install","projVariety","print",printProjVariety,1);
+  system("install","affRatMap","print",printAffRatMap,1);
+  system("install","projRatMap","print",printProjRatMap,1);
   system("install","scheme","==",equalScheme,2);
   system("install","scheme","!=",notequalScheme,2);
   system("install","scheme","print",printScheme,1);
@@ -666,6 +676,95 @@ X==Y;
 }
 
 
+proc printAffVariety(affVariety X)
+{
+	def B=basering;
+	def R=X.in;
+	setring R;
+    "ring = "+string(R);
+    "quotient = "+string(X.value);
+    setring B;
+}
+
+
+
+proc printProjVariety(projVariety X)
+{
+	def B=basering;
+	def R=X.in;
+	setring R;
+    "ring = "+string(R);
+    "quotient = "+string(X.value);
+    setring B;
+}
+
+
+
+proc printAffRatMap(affRatMap phi)
+{
+	def B=basering;
+	def R=phi.preim.in;
+	def S=phi.im.in;
+    int i,k;
+
+    setring R;
+    "Preimage ring: ("+string(R)+")/("+string(phi.preim.value)+")"; 
+    "Domain: D("+string(Domain(phi))+")";   
+    setring S;
+    "Image ring: ("+string(S)+")/("+string(phi.im.value)+")";
+    string st;
+	int n=nvars(R);
+    int m=nvars(S);
+    setring R;
+    "Map:";
+    st="     ( ";
+	for(i=1; i<n; i=i+1)
+    {
+       st=st+string(var(i))+" , ";
+    }
+	st=st+string(var(n))+" ) -----> ( ";   
+    for(i=1; i<m; i=i+1)
+    {
+       st=st+string(phi.ratFuncs[i])+" , ";
+    }
+    st=st+string(phi.ratFuncs[m])+" )";
+    st;
+    setring B;
+}
+
+
+
+proc printProjRatMap(projRatMap phi)
+{
+	def B=basering;
+	def R=phi.preim.in;
+	def S=phi.im.in;
+    int i,k;
+
+    setring R;
+    "Preimage ring: ("+string(R)+")/("+string(phi.preim.value)+")"; 
+    "Domain: D("+string(Domain(phi))+")";   
+    setring S;
+    "Image ring: ("+string(S)+")/("+string(phi.im.value)+")";
+    string st;
+	int n=nvars(R);
+    int m=nvars(S);
+    setring R;
+    "Map:";
+    st="     ( ";
+	for(i=1; i<n; i=i+1)
+    {
+       st=st+string(var(i))+" : ";
+    }
+	st=st+string(var(n))+" ) -----> ( ";   
+    for(i=1; i<m; i=i+1)
+    {
+       st=st+string(phi.ratFuncs[i])+" : ";
+    }
+    st=st+string(phi.ratFuncs[m])+" )";
+    st;
+    setring B;
+}
 
 
 
@@ -739,7 +838,6 @@ example
    Y.cover;
    Y.maps;
 }
-
 
 
 
@@ -904,6 +1002,26 @@ example
    X;
    scheme Y=makeProjScheme(ideal(x2z-y3-y2z),X);
    Y;
+}
+
+
+
+proc makeaffVar(ideal I)
+{
+	affVariety result;
+	result.in=basering;
+	result.value=I;
+	return(result);
+}
+
+
+
+proc makeprojVar(ideal I)
+{
+	projVariety result;
+	result.in=basering;
+	result.value=I;
+	return(result);
 }
 
 
@@ -1961,7 +2079,7 @@ EXAMPLE: example chartmapImage; gives an example"
    if((size(#)==1)&&(typeof(#[1])=="Ideal"))
    {
       if(#[1].in!=R)
-	  {   ERROR(Faulty second input!)}
+	  {   ERROR(Rings incompatible!)}
 	  A=A+#[1].value;
    }}
    
@@ -2442,11 +2560,74 @@ Pi.chartmaps;
 
 
 
-proc InvImage(scheme X, morphism phi)
-"USAGE: InvImage(x,phi); X scheme, phi morphism
+proc Domain(def phi)
+{
+	if(typeof(phi)=="affRatMap")
+	{
+		def R=basering;
+		def S=phi.preim.in;
+		setring S;
+		int n=nvars(phi.im.in);
+		Ideal Dom=ideal(1);
+		ideal I=phi.preim.value;
+
+		for(int i=1; i<=n; i=i+1)
+		{
+			poly f=phi.ratFuncs[i].num;
+			poly g=phi.ratFuncs[i].den;
+			ideal J=quotient(ideal(g)+I,ideal(f));
+			Dom.value=intersect(Dom.value,J);
+
+			kill f,g,J;
+		}
+
+		return(Dom);
+		setring R;
+	}else{
+	if(typeof(phi)=="projRatMap")
+	{
+		def R=basering;
+		def S=phi.preim.in;
+		setring S;
+		int n=nvars(phi.im.in);
+		int m=nvars(S);
+		int i;
+		Ideal Dom=ideal(0);
+		ideal I=phi.preim.value;
+		ideal J=0;
+		ideal Z=0;
+
+		for(i=1; i<=n; i=i+1)
+		{
+			J=J+phi.ratFuncs[i].value;
+		}
+
+		for(i=1; i<=m; i=i+1)
+		{
+			Z=Z+ideal(var(i));
+		}
+
+		for(i=1; i<=n; i=i+1)
+		{
+			Dom.value=Dom.value+quotient(ideal(phi.ratFuncs[i].value)+I,J);
+		}
+
+		Dom.value=sat(Dom.value,Z)[1];
+		return(Dom);
+		setring R;
+	}}
+}
+
+
+
+
+proc InvImage(def X, def phi)
+"USAGE: InvImage(X,phi); X scheme, phi morphism
 RETURN: Inverse image of X under phi
 EXAMPLE: example InvImage; gives an example"
 {
+   if((typeof(X)=="scheme")&&(typeof(phi)=="morphism"))
+   {
    def R=basering;
    scheme result;
    
@@ -2493,6 +2674,66 @@ EXAMPLE: example InvImage; gives an example"
    
    setring R;
    return(result);
+   }
+
+   if((typeof(X)=="affVariety")&&(typeof(phi)=="affRatMap"))
+   {
+	def B=basering;
+	def R=phi.preim.in;
+	def S=phi.im.in;
+
+	setring S;
+	int i;
+	list L;
+	for(i=1; i<=ncols(X.value); i=i+1)
+	{
+		L=L+list(PolyCompratFunc(X.value[i],phi.ratFuncs));
+	}
+
+	setring R;
+	poly p=1;
+	for(i=1; i<=size(L); i=i+1)
+	{
+		p=lcm(p,L[i].den);
+	}
+	ideal I=phi.preim.value;
+	for(i=1; i<=size(L); i=i+1)
+	{
+		I=I+ideal(L[i].num*p/L[i].den);
+	}
+	I=sat(I,Domain(phi).value)[1];
+	affVariety result=I;
+	return(result);
+   }
+
+   if((typeof(X)=="projVariety")&&(typeof(phi)=="projRatMap"))
+   {
+	def B=basering;
+	def R=phi.preim.in;
+	def S=phi.im.in;
+	int i;
+
+	setring S;
+	ideal I=X.value;
+
+	setring R;
+	ideal P;
+	for(i=1; i<=size(phi.ratFuncs); i=i+1)
+	{
+		P[i]=phi.ratFuncs[i].value;
+	}
+	map f=S,P;
+	P=0;
+	for(i=1; i<=nvars(R); i=i+1)
+	{
+		P[i]=var(i);
+	}
+	ideal J=f(I)+phi.preim.value;
+	J=sat(J,Domain(phi).value*P)[1];
+
+	projVariety result=J;
+	return(result);
+   }
 }
 example
 {"EXAMPLE:";
@@ -2558,13 +2799,15 @@ Zinv;
 }
 
 
-proc Image(morphism phi, list #)
+proc Image(def phi, list #)
 "USAGE: Image(phi[,Z]); phi morphism, Z scheme
 ASSUME: Z is a subscheme of phi.preim
 RETURN: scheme S that, if no additional input given, represents the image of phi, 
         otherwise it represents the image of Z under phi
 EXAMPLE: example Image; gives an example"
 {
+   if(typeof(phi)=="morphism")
+   {
    def B=basering;
    scheme result;
    int i,j;
@@ -2623,6 +2866,204 @@ EXAMPLE: example Image; gives an example"
    result.maps=phi.im.maps;
    setring B;
    return(result);
+   
+   }else{
+   if(typeof(phi)=="affRatMap")
+   {
+	  def Base=basering;
+      def R=phi.preim.in;
+      def S=phi.im.in;
+      affVariety result;
+      int i,j,n,m,e,c;
+      n=nvars(R);
+      m=nvars(S);
+      c=char(R);
+   
+      setring R;
+      ideal A=phi.preim.value;
+      if(size(#)==1)
+      {  
+	     A=A+#[1].value;
+      }
+   
+      setring S;
+      ideal B=phi.im.value;
+   
+         setring R;
+	     poly p=1;
+		 for(j=1; j<=m; j=j+1)
+		 {
+			p=p*phi.ratFuncs[j].den;
+		 }
+	  
+         ring T=c,(t,x(1..n),y(1..m)),dp;
+	     setring T;
+	     ideal Ix,Iy,It;
+	     for(j=1; j<=n; j=j+1)
+	     {
+	        Ix=Ix,x(j);
+	     }
+	     Ix=simplify(Ix,2);
+	     map f=R,Ix;
+	     kill Ix;
+	     for(j=1; j<=m; j=j+1)
+	     {
+	        Iy=Iy,y(j);
+	     }
+	     Iy=simplify(Iy,2);
+	     map g=S,Iy;
+	     kill Iy;
+	     It=ideal(f(p)*t-1);
+	  
+	     setring S;
+	     ideal J,K;
+	     for(j=1; j<=n+m+1; j=j+1)
+	     {
+	        if(j<=n+1)
+		    {
+		       J=J,1;
+		    }else{
+		       J=J,var(j-n-1);
+		    }
+	     }
+	     J=simplify(J,2);
+	     map h=T,J;
+	     kill J;
+	  
+	     setring T;
+	     ideal L=f(A)+It;
+	  
+         for(j=1; j<=m; j=j+1)
+         {
+	        setring R;
+            poly r,s;
+		    r=phi.ratFuncs[j].num;
+		    s=phi.ratFuncs[j].den;
+		 
+		    setring T;
+		    L=L+ideal(f(s)*y(j)-f(r));
+		 
+		    setring R;
+		    kill r,s;
+         }
+	  
+	     setring T;
+	     L=elim(L,1..n+1);
+	     setring S;
+	     K=h(L)+B;
+	     result=K;
+	  
+	     kill h;
+	     setring R;
+	     kill p;
+	     setring S;
+	     kill K;
+	     setring T;
+	     kill L,f,g;
+	     kill T;      
+
+      setring R;
+      kill A;
+   
+      setring Base;
+      return(result);
+
+   }else{
+   if(typeof(phi)=="projRatMap")
+   {
+      def Base=basering;
+      def R=phi.preim.in;
+      def S=phi.im.in;
+      projVariety result;
+      int i,j,n,m,e,c;
+      n=nvars(R);
+      m=nvars(S);
+      c=char(R);
+   
+      setring R;
+      ideal A=phi.preim.value;
+      if(size(#)==1)
+      {  
+	     A=A+#[1].value;
+      }
+   
+      setring S;
+      ideal B=phi.im.value;
+	  
+         ring T=c,(x(1..n),y(1..m)),dp;
+	     setring T;
+	     ideal Ix,Iy;
+	     for(j=1; j<=n; j=j+1)
+	     {
+	        Ix=Ix,x(j);
+	     }
+	     Ix=simplify(Ix,2);
+	     map f=R,Ix;
+	     kill Ix;
+	     for(j=1; j<=m; j=j+1)
+	     {
+	        Iy=Iy,y(j);
+	     }
+	     Iy=simplify(Iy,2);
+	     map g=S,Iy;
+	     kill Iy;
+	  
+	     setring S;
+	     ideal J,K;
+	     for(j=1; j<=n+m; j=j+1)
+	     {
+	        if(j<=n)
+		    {
+		       J=J,1;
+		    }else{
+		       J=J,var(j-n);
+		    }
+	     }
+	     J=simplify(J,2);
+	     map h=T,J;
+	     kill J;
+	  
+	     setring T;
+	     ideal L=f(A);
+		 matrix M[2][m];
+		 ideal J=0;
+	  
+         for(j=1; j<=m; j=j+1)
+         {
+	        setring R;
+            poly r;
+		    r=phi.ratFuncs[j].value;
+		 
+		    setring T;
+		    M[1,j]=y(j);
+			M[2,j]=f(r);
+			J=J+f(r);
+		 
+		    setring R;
+		    kill r;
+         }
+	  
+	     setring T;
+		 L=L+minor(M,2);
+		 L=sat(L,J)[1];
+	     L=elim(L,1..n);
+	     setring S;
+	     K=h(L)+B;
+	     result=K;
+	  
+	     kill h;
+	     setring S;
+	     kill K;
+	     setring T;
+	     kill L,f,g;
+	     kill T;      
+
+      setring R;
+      kill A;
+   
+      setring Base;
+      return(result);
+   }}}
 }
 example
 {"EXAMPLE:";
@@ -2716,6 +3157,316 @@ morphism phi=X,Y,L;
 scheme XIm=Image(phi);
 
 scheme ZIm=Image(phi,Z);
+}
+
+
+
+
+proc Inverse(def phi)
+{
+	if(typeof(phi)=="affRatMap")
+	{
+	  def Base=basering;
+      def R=phi.preim.in;
+      def S=phi.im.in;
+      affRatMap result;
+	  result.im=phi.preim;
+	  result.preim=phi.im;
+      int i,j,n,m,e,c,k,isdone;
+      n=nvars(R);
+      m=nvars(S);
+      c=char(R);
+   
+      setring R;
+      ideal A=phi.preim.value;
+   
+      setring S;
+      ideal B=phi.im.value;
+   
+         setring R;
+	     poly p=1;
+		 for(j=1; j<=m; j=j+1)
+		 {
+			p=p*phi.ratFuncs[j].den;
+		 }
+	  
+         ring T=c,(t,x(1..n),y(1..m)),(dp(1),dp(n),dp(m));
+	     setring T;
+	     ideal Ix,Iy,It;
+		 poly v=1;
+	     for(j=1; j<=n; j=j+1)
+	     {
+	        Ix=Ix,x(j);
+			v=v*x(j);
+	     }
+	     Ix=simplify(Ix,2);
+	     map f=R,Ix;
+	     kill Ix;
+	     for(j=1; j<=m; j=j+1)
+	     {
+	        Iy=Iy,y(j);
+	     }
+	     Iy=simplify(Iy,2);
+	     map g=S,Iy;
+	     kill Iy;
+	     It=ideal(f(p)*t-1);
+	  
+	     setring S;
+	     ideal J,K;
+	     for(j=1; j<=n+m+1; j=j+1)
+	     {
+	        if(j<=n+1)
+		    {
+		       J=J,1;
+		    }else{
+		       J=J,var(j-n-1);
+		    }
+	     }
+	     J=simplify(J,2);
+	     map h=T,J;
+	     kill J;
+	  
+	     setring T;
+	     ideal L=f(A)+It;
+	  
+         for(j=1; j<=m; j=j+1)
+         {
+	        setring R;
+            poly r,s;
+		    r=phi.ratFuncs[j].num;
+		    s=phi.ratFuncs[j].den;
+		 
+		    setring T;
+		    L=L+ideal(f(s)*y(j)-f(r));
+		 
+		    setring R;
+		    kill r,s;
+         }
+	  
+	     setring T;
+		 ideal LL;
+		 for(j=1; j<=n; j=j+1)
+		 {
+			LL=eliminate(L,v/x(j));
+			k=1;
+			isdone=0;
+			while((k<=size(LL))&&(!isdone))
+			{
+				matrix C=coeffs(LL[k],x(j));
+				if(nrows(C)==2)
+				{
+					poly r,s;
+					r=-C[1,1];
+					s=C[2,1];
+
+					setring S;
+					ratFunc F=h(r),h(s);
+					result.ratFuncs=result.ratFuncs+list(F);
+					kill F;
+
+					setring T;
+					kill r,s;
+					isdone=1;
+				}
+				kill C;
+				k=k+1;
+			}
+			if(!isdone)
+			{
+				ERROR("Input is not invertible!");
+			}
+		 }
+	     setring S;
+	  
+	     kill h;
+	     setring R;
+	     kill p;
+	     setring S;
+	     setring T;
+	     kill L,f,g;
+	     kill T;      
+
+      setring R;
+      kill A;
+   
+      setring Base;
+      return(result);
+	}
+	if(typeof(phi)=="projRatMap")
+	{
+	  def Base=basering;
+      def R=phi.preim.in;
+      def S=phi.im.in;
+      projRatMap result;
+	  result.im=phi.preim;
+	  result.preim=phi.im;
+      int i,j,n,m,e,c,k,isdone;
+      n=nvars(R);
+      m=nvars(S);
+      c=char(R);
+   
+      setring R;
+      ideal A=phi.preim.value;
+   
+      setring S;
+      ideal B=phi.im.value;
+	  
+         ring T=c,(x(1..n),y(1..m)),(dp(n),dp(m));
+	     setring T;
+	     ideal Ix,Iy;
+		 poly v=1;
+	     for(j=1; j<=n; j=j+1)
+	     {
+	        Ix=Ix,x(j);
+			v=v*x(j);
+	     }
+	     Ix=simplify(Ix,2);
+	     map f=R,Ix;
+	     kill Ix;
+	     for(j=1; j<=m; j=j+1)
+	     {
+	        Iy=Iy,y(j);
+	     }
+	     Iy=simplify(Iy,2);
+	     map g=S,Iy;
+	     kill Iy;
+	  
+	     setring S;
+	     ideal J,K;
+	     for(j=1; j<=n+m; j=j+1)
+	     {
+	        if(j<=n)
+		    {
+		       J=J,1;
+		    }else{
+		       J=J,var(j-n);
+		    }
+	     }
+	     J=simplify(J,2);
+	     map h=T,J;
+	     kill J;
+	  
+	     setring T;
+	     ideal L=f(A);
+		 matrix M[2][m];
+		 ideal J=0;
+	  
+         for(j=1; j<=m; j=j+1)
+         {
+	        setring R;
+            poly r;
+		    r=phi.ratFuncs[j].value;
+		 
+		    setring T;
+		    M[1,j]=y(j);
+			M[2,j]=f(r);
+			J=J+f(r);
+		 
+		    setring R;
+		    kill r;
+         }
+	  
+	     setring T;
+		 L=L+minor(M,2);
+		 L=sat(L,J)[1];
+		 kill M;
+
+		 k=1;
+		 isdone=0;
+		 while((k<=n)&&(!isdone))
+		 {
+			if(reduce(x(k),L)!=0)
+			{
+				e=k;
+				isdone=1;
+			}
+			k=k+1;
+		 }
+		 if(!isdone)
+		 {
+			ERROR("Input is not invertible");
+		 }
+
+		 ideal LL;
+		 matrix M[2][n];
+		 for(j=1; j<=n; j=j+1)
+		 {
+			if(j!=e)
+			{
+				LL=eliminate(L,v/(x(j)*x(e)));
+			    k=1;
+			    isdone=0;
+			    while((k<=size(LL))&&(!isdone))
+			    {
+				   matrix C=coeffs(LL[k],x(e));
+				   if(nrows(C)==1)
+				   {
+					   M[1,j]=0;
+					   poly r=C[1,1];
+					   C=coeffs(r,x(j));
+					   if(nrows(C)==2)
+					   {
+						  M[2,j]=C[2,1];
+						  isdone=1;
+					   }
+					   kill r;
+				   }
+				   if((nrows(C)==2))
+				   {
+				   if(C[2,1]/x(j)==0)
+				   {
+					   M[1,j]=-C[2,1];
+					   poly r=C[1,1];
+					   C=coeffs(r,x(j));
+					   if(nrows(C)==2)
+					   {
+						  M[2,j]=C[2,1];
+						  isdone=1;
+					   }
+					   kill r;
+				   }}
+				   kill C;
+				   k=k+1;
+			    }
+			    if(!isdone)
+			    {
+				   ERROR("Input is not invertible!");
+			    }
+			}
+			if(j==e)
+			{
+				M[1,e]=1;
+				M[2,e]=1;
+			}
+		 }
+
+	     setring S;
+		 matrix M=h(M);
+		 poly r=1;
+		 for(j=1; j<=n; j=j+1)
+		 {
+			r=lcm(r,M[2,j]);
+		 }
+		 Poly F;
+		 for(j=1; j<=n; j=j+1)
+		 {
+			F=r/M[2,j]*M[1,j];
+			result.ratFuncs=result.ratFuncs+list(F);
+		 }
+	  
+	     kill h;
+	     setring S;
+	     kill K;
+	     setring T;
+	     kill L,f,g;
+	     kill T;      
+
+      setring R;
+      kill A;
+   
+      setring Base;
+      return(result);
+	}
 }
 
 
