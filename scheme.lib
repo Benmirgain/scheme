@@ -124,10 +124,20 @@ static proc mod_init()
   system("install","chartmap","!=",notequalChartmap,2);
   system("install","affVariety","=",makeaffVar,1);
   system("install","affVariety","print",printAffVariety,1);
+  system("install","affVariety","==",equalAffVariety,2);
+  system("install","affVariety","!=",notequalAffVariety,2);
   system("install","projVariety","=",makeprojVar,1);
   system("install","projVariety","print",printProjVariety,1);
+  system("install","projVariety","==",equalProjVariety,2);
+  system("install","projVariety","!=",notequalProjVariety,2);
   system("install","affRatMap","print",printAffRatMap,1);
   system("install","projRatMap","print",printProjRatMap,1);
+  system("install","affRatMap","*",affRatMapCompaffRatMap,2);
+  system("install","projRatMap","*",projRatMapCompprojRatMap,2);
+  system("install","affRatMap","==",isSameMap,2);
+  system("install","projRatMap","==",isSameMap,2);
+  system("install","affRatMap","!=",isnotSameMap,2);
+  system("install","projRatMap","!=",isnotSameMap,2);
   system("install","scheme","==",equalScheme,2);
   system("install","scheme","!=",notequalScheme,2);
   system("install","scheme","print",printScheme,1);
@@ -551,6 +561,58 @@ static proc equalChartmap(chartmap phi, chartmap psi)
 static proc notequalChartmap(chartmap phi, chartmap psi)
 {
    return(!equalChartmap(phi,psi));
+}
+
+static proc equalAffVariety(affVariety X, affVariety Y)
+{
+	if(X.in!=Y.in)
+	{
+		return(0);
+	}
+	def B=basering;
+	def R=X.in;
+	setring R;
+	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
+	{
+		setring B;
+		return(1);
+	}
+	else
+	{
+		setring B;
+		return(0);
+	}
+}
+
+static proc notequalAffVariety(affVariety X, affVariety Y)
+{
+	return(!equalAffVariety(X,Y));
+}
+
+static proc equalProjVariety(projVariety X, projVariety Y)
+{
+	if(X.in!=Y.in)
+	{
+		return(0);
+	}
+	def B=basering;
+	def R=X.in;
+	setring R;
+	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
+	{
+		setring B;
+		return(1);
+	}
+	else
+	{
+		setring B;
+		return(0);
+	}
+}
+
+static proc notequalProjVariety(projVariety X, projVariety Y)
+{
+	return(!equalProjVariety(X,Y));
 }
 
 // Used for comparing schemes
@@ -2495,6 +2557,128 @@ morphism psi=Y,X,L;
 
 morphism id=psi*phi;
 id.chartmaps;
+}
+
+
+proc isSameMap(def phi, def psi)
+{
+	if((typeof(phi)=="affRatMap")&&(typeof(psi)=="affRatMap"))
+	{
+	if((phi.preim!=psi.preim)||(size(phi.ratFuncs)!=size(psi.ratFuncs)))
+	{
+		return(0);
+	}
+	def B=basering;
+	def R=phi.preim.in;
+	setring R;
+	poly p;
+	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
+	{
+		p=phi.ratFuncs[i].num*psi.ratFuncs[i].den-psi.ratFuncs[i].num*phi.ratFuncs[i].den;
+		if(reduce(p,std(phi.preim.value))!=0)
+		{
+			setring B;
+			return(0);
+		}
+	}
+	setring B;
+	return(1);
+	}
+
+	if((typeof(phi)=="projRatMap")&&(typeof(psi)=="projRatMap"))
+	{
+	if((phi.preim!=psi.preim)||(size(phi.ratFuncs)!=size(psi.ratFuncs)))
+	{
+		return(0);
+	}
+	def B=basering;
+	def R=phi.preim.in;
+	setring R;
+	int n=size(phi.ratFuncs);
+	matrix M[2][n];
+	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
+	{
+		M[1,i]=phi.ratFuncs[i].value;
+		M[2,i]=psi.ratFuncs[i].value;
+	}
+	ideal I=minor(M,2);
+	if(size(reduce(I,std(phi.preim.value)))!=0)
+	{
+		~;
+		setring B;
+		return(0);
+	}
+	setring B;
+	return(1);
+	}
+}
+
+static proc isnotSameMap(def phi, def psi)
+{
+	if((typeof(phi)=="affRatMap")&&(typeof(psi)=="affRatMap"))
+	{
+		return(!isSameMap(phi,psi));
+	}
+	if((typeof(phi)=="projRatMap")&&(typeof(psi)=="projRatMap"))
+	{
+		return(!isSameMap(phi,psi));
+	}
+}
+
+
+proc affRatMapCompaffRatMap(affRatMap phi, affRatMap psi)
+{
+	affRatMap result;
+	result.preim=psi.preim;
+	result.im=phi.im;
+
+	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
+	{
+		result.ratFuncs[i]=ratFuncCompratFunc(phi.ratFuncs[i],psi.ratFuncs);
+	}
+
+	return(result);
+}
+
+
+proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
+{
+	def B=basering;
+	def R=psi.preim.in;
+	def S=psi.im.in;
+	projRatMap result;
+	result.preim=psi.preim;
+	result.im=phi.im;
+
+	setring S;
+	ideal I=0;
+	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
+	{
+		I[i]=phi.ratFuncs[i].value;
+	}
+
+	setring R;
+	ideal J=0;
+	for(i=1; i<=size(psi.ratFuncs); i=i+1)
+	{
+		J[i]=psi.ratFuncs[i].value;
+	}
+	map f=S,J;
+	J=f(I);
+	poly g=0;
+	for(i=1; i<=ncols(J); i=i+1)
+	{
+		g=gcd(g,J[i]);
+	}
+	Poly P;
+	for(i=1; i<=ncols(J); i=i+1)
+	{
+		P=J[i]/g;
+		result.ratFuncs[i]=P;
+	}
+
+	setring B;
+	return(result);
 }
 
 
