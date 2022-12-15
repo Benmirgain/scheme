@@ -104,6 +104,7 @@ static proc mod_init()
   newstruct("scheme","list cover, list maps");
   newstruct("affVariety","ring in, ideal value");
   newstruct("projVariety","ring in, ideal value");
+  newstruct("product","ring in, ideal value, list gradings");
   newstruct("morphism","scheme preim, scheme im, list chartmaps");
   newstruct("affRatMap","affVariety preim, affVariety im, list ratFuncs");
   newstruct("projRatMap","projVariety preim, projVariety im, list ratFuncs");
@@ -738,6 +739,227 @@ X==Y;
 }
 
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Variety Stuff
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+proc makeaffVar(ideal I)
+{
+	affVariety result;
+	result.in=basering;
+	result.value=I;
+	return(result);
+}
+
+
+proc makeprojVar(ideal I)
+{
+	if(!homog(I))
+	{   ERROR(Input has to be homogeneous)}
+	projVariety result;
+	result.in=basering;
+	result.value=I;
+	return(result);
+}
+
+
+proc makeProduct(list #)
+{
+	def B=basering;
+	product result;
+	int i,j,k;
+
+	if(typeof(#[1])=="ideal")
+	{
+	if(size(#)==1)
+	{
+		result.in=B;
+		result.value=#[1];
+		intvec iv;
+		for(i=1; i<=nvars(B); i=i+1)
+		{
+			iv[i]=deg(var(i));
+		}
+		result.gradings=list(list(iv,"projective"));
+
+		kill iv;
+		return(result);
+	}
+
+	if(typeof(#[2])=="int")
+	{
+		result.in=B;
+		result.value=#[1];
+
+		int varcount=0;
+		for(i=2; i<=size(#); i=i+1)
+		{
+			intvec iv=0:nvars(B);
+			if(varcount+#[i]>nvars(B))
+			{   ERROR("Input incorrect")}
+			for(j=1; j<=#[i]; j=j+1)
+			{
+				varcount=varcount+1;
+				iv[varcount]=deg(var(varcount));
+			}
+
+			result.gradings[i-1]=list(iv,"projective");
+			kill iv;
+		}
+
+		if(varcount!=nvars(B))
+		{   ERROR("Input incorrect")}
+		kill varcount;
+
+		return(result);
+	}
+
+	if(typeof(#[2])=="poly")
+	{
+		result.in=B;
+		result.value=#[1];
+
+		poly pvars1=1;
+		poly pvars2=1;
+		for(i=1; i<=nvars(B); i=i+1)
+		{
+			pvars2=pvars2*var(i);
+		}
+
+		for(i=2; i<=size(#); i=i+1)
+		{
+			intvec iv;
+			for(j=1; j<=nvars(B); j=j+1)
+			{
+				if(#[i]/var(j)!=0)
+				{
+					iv[j]=deg(var(j));
+				}else{
+					iv[j]=0;
+				}
+			}
+			result.gradings[i-1]=list(iv,"projective");
+			kill iv;
+			pvars1=pvars1*#[i];
+		}
+
+		if(pvars1!=pvars2)
+		{   ERROR("Input incorrect")}
+
+		kill pvars1,pvars2;
+
+		return(result);
+	}
+	}
+
+	list L;
+	if(typeof(#[1])=="list")
+	{
+		L=#[1];
+	}else{
+		L=#;
+	}
+
+	if((typeof(L[1])=="affVariety")||(typeof(L[1])=="projVariety")||(typeof(L[1])=="product"))
+	{
+	def R=L[1].in;
+	setring R;
+	ideal I=L[1].value;
+	list grad;
+	if(typeof(L[1])=="affVariety")
+	{
+		intvec iv=1:nvars(R);
+		grad[1]=list(iv,"affine");
+		kill iv;
+	}
+	if(typeof(L[1])=="projVariety")
+	{
+		intvec iv;
+		for(j=1; j<=nvars(R); j=j+1)
+		{
+			iv[j]=deg(var(j));
+		}
+		grad[1]=list(iv,"projective");
+		kill iv;
+	}
+	if(typeof(L[1])=="product")
+	{
+		grad=L[1].gradings;
+	}
+	for(i=2; i<=size(L); i=i+1)
+	{
+		def S=L[i].in;
+		setring S;
+		ideal J=L[i].value;
+		intvec iv=0:nvars(R);
+		intvec jv=0:nvars(S);
+		intvec kv=nvars(R)+1..nvars(R)+nvars(S);
+		for(j=1; j<=size(grad); j=j+1)
+		{
+			grad[j][1]=grad[j][1],jv;
+		}
+		kill jv;
+
+		def T=ringtensor(R,S);
+		setring T;
+		ideal I=fetch(R,I);
+		ideal J=fetch(S,J,kv);
+		kill kv;
+		I=I+J;
+		setring R;
+		kill I;
+		R=T;
+		setring T;
+
+		if(typeof(L[i])=="affVariety")
+		{
+			iv=iv,1:nvars(S);
+			grad=grad+list(list(iv,"affine"));
+		}
+		if(typeof(L[i])=="projVariety")
+		{
+			setring S;
+			intvec jv;
+			for(k=1; k<=nvars(S); k=k+1)
+			{
+				jv[k]=deg(var(k));
+			}
+			iv=iv,jv;
+			kill jv;
+			grad=grad+list(list(iv,"projective"));
+			setring T;
+		}
+		if(typeof(L[i])=="product")
+		{
+			int n=size(grad);
+			grad=grad+L[i].gradings;
+			for(k=n+1; k<=size(grad); k=k+1)
+			{
+				grad[k][1]=iv,grad[k][1];
+			}
+			kill n;
+		}
+
+		kill iv;
+		setring S;
+		kill J;
+		kill S,T;
+		setring R;
+	}
+
+	setring R;
+	result.in=R;
+	result.value=I;
+	result.gradings=grad;
+
+	return(result);
+	}
+}
+
+
 proc printAffVariety(affVariety X)
 {
 	def B=basering;
@@ -1064,26 +1286,6 @@ example
    X;
    scheme Y=makeProjScheme(ideal(x2z-y3-y2z),X);
    Y;
-}
-
-
-
-proc makeaffVar(ideal I)
-{
-	affVariety result;
-	result.in=basering;
-	result.value=I;
-	return(result);
-}
-
-
-
-proc makeprojVar(ideal I)
-{
-	projVariety result;
-	result.in=basering;
-	result.value=I;
-	return(result);
 }
 
 
