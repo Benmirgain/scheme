@@ -1052,6 +1052,10 @@ proc printProjRatMap(projRatMap phi)
 
 
 
+
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //  Basic constructions of schemes
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -2806,7 +2810,6 @@ proc isSameMap(def phi, def psi)
 	ideal I=minor(M,2);
 	if(size(reduce(I,std(phi.preim.value)))!=0)
 	{
-		~;
 		setring B;
 		return(0);
 	}
@@ -3182,6 +3185,79 @@ scheme Z=makeProjScheme(ideal(3a-2b),Y);
 
 scheme Zinv=InvImage(Z,phi);
 Zinv;
+}
+
+
+proc Graph(def phi)
+{
+	if(typeof(phi)=="affRatMap")
+	{
+		def B=basering;
+		product result=makeProduct(phi.preim,phi.im);
+		def S=phi.preim.in;
+		int n=nvars(S);
+		int i;
+
+		def R=result.in;
+		setring R;
+
+		for(i=1; i<=size(phi.ratFuncs); i=i+1)
+		{
+			setring S;
+			poly p,q;
+			p=phi.ratFuncs[i].num;
+			q=phi.ratFuncs[i].den;
+
+			setring R;
+			poly p=fetch(S,p);
+			poly q=fetch(S,q);
+			result.value=result.value+ideal(q*var(n+i)-p);
+
+			kill p,q;
+			setring S;
+			kill p,q;
+		}
+
+		kill n,i,S,R;
+		setring B;
+		return(result);
+	}
+
+	if(typeof(phi)=="projRatMap")
+	{
+		def B=basering;
+		product result=makeProduct(phi.preim,phi.im);
+		def S=phi.preim.in;
+		int n=nvars(S);
+		int i,j;
+
+		def R=result.in;
+		setring R;
+
+		for(i=1; i<size(phi.ratFuncs); i=i+1)
+		{
+		for(j=i+1; j<=size(phi.ratFuncs); j=j+1)
+		{
+			setring S;
+			poly p,q;
+			p=phi.ratFuncs[i].value;
+			q=phi.ratFuncs[j].value;
+
+			setring R;
+			poly p=fetch(S,p);
+			poly q=fetch(S,q);
+			result.value=result.value+ideal(q*var(n+i)-p*var(n+j));
+
+			kill p,q;
+			setring S;
+			kill p,q;
+		}
+		}
+
+		kill n,i,j,S,R;
+		setring B;
+		return(result);
+	}
 }
 
 
@@ -4185,8 +4261,8 @@ EXAMPLE: example blowUp;  shows an example
 		 setring T;
 		 ideal Im=imap(S,Id);
 		 map f=S,Im;
-		 ideal J=f(I);
-		 ideal Je=f(Ie);
+		 ideal J=std(f(I));
+		 ideal Je=std(f(Ie));
 		 chart U=J;
 		 chart Ue=Je;
 		 phi.preim=U;
@@ -5059,7 +5135,7 @@ if((size(#)==2)&&(typeof(#[1])=="chart")&&(typeof(#[2])=="chart"))
    if(r>s)
    {   ERROR("Incompatible Inputs");}
    for(k=1; k<=r; k=k+1)
-   {   if(IW[k]!=IX[k]){~:ERROR("Incompatible Inputs");}}
+   {   if(IW[k]!=IX[k]){  ERROR("Incompatible Inputs");}}
    if(dim(std(IX))==dim(std(IW)))
    {
       if((std(reduce(std(IX),std(IW)))==0)&&(std(reduce(std(IW),std(IX)))==0))
