@@ -114,6 +114,7 @@ static proc mod_init()
   newstruct("iterativeScheme","list cover, list maps");
   newstruct("iterativeChartOrigin","chart entry, int label");
   newstruct("iterativeChart","def parent, chart entry, chartmap parentmap, chartmap parentInverseMap, intvec label");
+  newstruct("coherentSheaf","list cover, def space");
   
   system("install","chart","=",makeChart,1);
   system("install","chartmap","=",makeChartmap,1);
@@ -4329,7 +4330,176 @@ example
 
 proc itblowUp(iterativeScheme X, iterativeScheme C)
 {
-	
+	iterativeScheme B;
+	B.maps=X.maps;
+	coherentSheaf eD;
+	int i;
+
+	// Computation of the blowup charts
+
+	int n=size(X.cover);
+    for(i=1; i<=n; i=i+1)
+    {
+    	def R=X.cover[i].entry.in;
+		setring R;
+		int m=nvars(R);
+		C.cover[i].entry.value=std(C.cover[i].entry.value);
+		int l=size(C.cover[i].entry.value);
+		ideal A=C.cover[i].entry.value;
+		ideal Base=X.cover[i].entry.value;
+		for(int j=1; j<=l; j=j+1)
+		{
+			def S=changevar("x()");
+		 
+			list newvars;
+			for(int k=1; k<=l; k=k+1)
+			{
+		    	if(k!=j)
+		    	{   newvars=newvars+list("y("+string(k)+")");}
+		 	}
+		 	if(size(newvars)!=0)
+		 	{
+				S=addvarsTo(S,newvars,0);
+		 	}
+		 
+		 	setring S;
+		 	chart U=ideal(0);
+		 	chartmap phi;
+		 	phi.preim=U;
+		 	phi.im=X.cover[i].entry;
+		 	phi.dom=1;
+		 	phi.ratFuncs[1]=list();
+		 	for(k=1; k<=m; k=k+1)
+		 	{
+		    	ratFunc r=var(k);
+		    	phi.ratFuncs[1]=phi.ratFuncs[1]+list(r);
+				kill r;
+		 	}
+		 
+		 
+		 	setring S;
+		 	ideal I=0;
+		 	ideal J=0;
+		 	for(k=1; k<=m; k=k+1)
+		 	{
+		    	I=I+ideal(var(k));
+		 	}
+		 	map f=R,I;
+		 	J=f(A);
+		 	I=f(Base);
+		 	for(k=1; k<=l; k=k+1)
+		 	{
+		    	if(k!=j)
+				{
+			   		I=I+ideal(J[j]*y(k)-J[k]);
+				}
+		 	}
+		 	I=sat(I,ideal(J[j]))[1];
+		 	U.value=I;
+		 	phi.preim=U;
+
+			chartmap psi;
+			psi.preim=X.cover[i].entry;
+			psi.im=U;
+			setring R;
+			psi.dom=ideal(A[j]);
+			psi.ratFuncs[1]=list();
+			for(k=1; k<=m; k=k+1)
+		 	{
+		    	ratFunc r=var(k);
+		    	psi.ratFuncs[1]=psi.ratFuncs[1]+list(r);
+				kill r;
+		 	}
+			for(k=1; k<=l; k=k+1)
+		 	{
+		    	if(k!=j)
+				{
+					ratFunc r=A[k],A[j];
+		    		psi.ratFuncs[1]=psi.ratFuncs[1]+list(r);
+					kill r;
+				}
+		 	}
+
+			iterativeChart V;
+			intvec v=X.cover[i].label;
+			V.entry=U;
+			V.parent=X.cover[i];
+			V.parentmap=phi;
+			V.parentInverseMap=psi;
+			V.label=v,j;
+
+			setring S;
+			eD.cover=eD.cover+list(makeChart(U.value+J));
+			B.cover=B.cover+list(V);
+		 
+
+		 	kill J,newvars,S,I,U,phi,k,V,v,psi;
+		 	setring R;
+	  	}
+
+		kill A,Base;
+	  	kill R,m,l,j;
+   	}
+
+	// Elimination of variables
+
+	for(i=1; i<=size(B.cover); i=i+1)
+   	{
+		int j;
+	  	def S=B.cover[i].entry.in;
+	  	setring S;
+	  	ideal I=B.cover[i].entry.value;
+	  	ideal Ie=eD.cover[i].value;
+	  	list elim=elimpart(I);
+	  	ideal Id=elim[5];
+	  	n=size(elim[2]);
+	  	if(n>0)
+	  	{
+		 	chartmap phi,psi;
+		 	phi.im=B.cover[i].entry;
+		 	psi.preim=B.cover[i].entry;
+		 	psi.dom=1;
+		 	psi.ratFuncs[1]=list();
+		 	for(j=1; j<=nvars(S); j=j+1)
+		 	{
+				if(elim[4][j]!=0)
+				{   
+					psi.ratFuncs[1]=psi.ratFuncs[1]+list(makeratFunc(var(j)));
+				}
+		 	}
+		 	def T=tolessvars(elim[4]);
+
+		 	setring T;
+		 	ideal Im=imap(S,Id);
+		 	map f=S,Im;
+		 	ideal J=std(f(I));
+		 	ideal Je=std(f(Ie));
+		 	chart U=J;
+		 	chart Ue=Je;
+		 	phi.preim=U;
+		 	psi.im=U;
+		 	phi.dom=1;
+		 	phi.ratFuncs[1]=list();
+		 	for(j=1; j<=nvars(S); j=j+1)
+		 	{
+				phi.ratFuncs[1]=phi.ratFuncs[1]+list(makeratFunc(Im[j]));
+		 	}
+
+		 	B.cover[i].entry=U;
+		 	eD.cover[i]=Ue;
+			B.cover[i].parentmap=B.cover[i].parentmap*phi;
+			B.cover[i].parentInverseMap=psi*B.cover[i].parentInverseMap;
+
+		 	kill f,J,Je,Im;
+		 	kill T,phi,psi,U,Ue;
+	  	}
+
+	  	setring S;
+	  	kill I,Ie,Id,elim,j;
+	  	kill S;
+   	}
+
+	return(list(B,eD));
 }
 
 
@@ -5418,114 +5588,107 @@ proc maps(int n, int m, iterativeScheme X)
 RETURN: the gluing map from the i-th to the j-th chart
 EXAMPLE: example maps; gives an example"
 {
-   def R=basering;
+   	def R=basering;
    
-   int k,l,i,j;
-   chartmap phi,psi,result;
-   
-   def S=X.cover[n].entry.in;
-   setring S;
-   chart CX;
-   if(typeof(X.cover[n])=="iterativeChart")
-   {
-   poly f=X.cover[n].f;
-   ideal I=X.cover[n].entry.value;
-   def T=changevar("x()",S);
-   T=extendring(1,"t","dp",1,T);
-   setring T;
-   ideal VarS=var(1);
-   for(k=2; k<nvars(T); k=k+1)
-   {
-      VarS=VarS,var(k);
-   }
-   map F=S,VarS;
-   poly fnew=F(f);
-   ideal Inew=F(I);
-   Inew=Inew,t*fnew-1;
-   CX=makeChart(Inew);
-   phi.preim=CX;
-   phi.dom=ideal(1);
-   phi.ratFuncs[1]=list();
-   for(k=1; k<=size(VarS); k=k+1)
-   {
-      phi.ratFuncs[1][k]=makeratFunc(var(k));
-   }
-   list L=list(X.cover[n]);     
-   while(1)
-   {
-	 if(typeof(L[1])=="iterativeChart")
-	 {
-	    L=insert(L,L[1].parent);
-	 }else{
-		break;
-	 }
-   }
-   phi.im=L[1].entry;
-   i=L[1].label;
-   kill L;
-   setring S;
-   kill f,I;
-   setring T;
-   kill fnew,Inew,F,VarS;
-   kill T;
-}else{
-   i=X.cover[n].label;
-   phi=X.maps[i][i];
-   }
-   kill S;
-   
-   
-   def S=X.cover[m].entry.in;
-   setring S;
-   if(typeof(X.cover[m])=="iterativeChart")
-   {
-   poly f=X.cover[m].f;
-   ideal I=X.cover[m].entry.value;
-   psi.dom=ideal(f);
-   psi.ratFuncs[1]=list();
-   for(k=1; k<=nvars(S); k=k+1)
-   {
-      psi.ratFuncs[1][k]=makeratFunc(var(k));
-   }
-   psi.ratFuncs[1][nvars(S)+1]=makeratFunc(1,f);
-   def T=changevar("x()",S);
-   T=extendring(1,"t","dp",1,T);
-   setring T;
-   ideal VarS=var(1);
-   for(k=2; k<nvars(T); k=k+1)
-   {
-      VarS=VarS,var(k);
-   }
-   map F=S,VarS;
-   poly fnew=F(f);
-   ideal Inew=F(I);
-   Inew=Inew,t*fnew-1;
-   CX=makeChart(Inew);
-   psi.im=CX;
-   list L=list(X.cover[m]);     
-   while(1)
-   {
-	 if(typeof(L[1])=="iterativeChart")
-	 {
-	    L=insert(L,L[1].parent);
-	 }else{
-		break;
-	 }
-   }
-   psi.preim=L[1].entry;
-   j=L[1].label;
-   setring S;
-   kill f,I;
-}else{
-   j=X.cover[m].label;
-   psi=X.maps[j][j];
-   }
-   
-   result=psi*X.maps[i][j]*phi;  
-   
-   
-   return(result);
-   setring R;
+   	chartmap result,phi,psi;
+   	intvec v=X.cover[n].label;
+   	intvec w=X.cover[m].label;
+	int sv=size(v);
+	int sw=size(w);
+
+	phi.preim=X.cover[n].entry;
+	phi.im=X.cover[n].entry;
+	def S=X.cover[n].entry.in;
+	setring S;
+	phi.dom=ideal(1);
+	phi.ratFuncs[1]=list();
+	for(int i=1; i<=nvars(S); i=i+1)
+	{
+		ratFunc F=var(i);
+		phi.ratFuncs[1][i]=F;
+		kill F;
+	}
+	kill S,i;
+	setring R;
+
+	psi.preim=X.cover[m].entry;
+	psi.im=X.cover[m].entry;
+	def S=X.cover[m].entry.in;
+	setring S;
+	psi.dom=ideal(1);
+	psi.ratFuncs[1]=list();
+	for(int i=1; i<=nvars(S); i=i+1)
+	{
+		ratFunc F=var(i);
+		psi.ratFuncs[1][i]=F;
+		kill F;
+	}
+	kill S,i;
+	setring R;
+
+	int k=0;
+	int done=0;
+	while((k<sv)&&(k<sw)&&(!done))
+	{
+		if(v[k+1]!=w[k+1])
+		{
+			done=1;
+		}else{
+			k=k+1;
+		}
+	}
+	kill done;
+
+	int l=sv-1;
+	if(l>=1)
+	{
+		iterativeChart U=X.cover[n];
+		while((l>=k)&&(l>=1))
+		{
+			phi=U.parentmap*phi;
+			l=l-1;
+			if(l>=1)
+			{
+				def V=U.parent;
+				U=V;
+				kill V;
+			}
+		}
+		kill U;
+	}
+	kill l;
+
+	int l=sw-1;
+	if(l>=1)
+	{
+		iterativeChart U=X.cover[m];
+		while((l>=k)&&(l>=1))
+		{
+			psi=psi*U.parentInverseMap;
+			l=l-1;
+			if(l>=1)
+			{
+				def V=U.parent;
+				U=V;
+				kill V;
+			}
+		}
+		kill U;
+	}
+	kill l;
+
+	if(k!=0)
+	{
+		result=psi*phi;
+	}else{
+		int i=v[1];
+		int j=w[1];
+		result=psi*X.maps[i][j]*phi;
+		kill i,j;
+	}
+
+	return(result);
+   	setring R;
 }
 example
 {"EXAMPLE:";
@@ -5729,7 +5892,7 @@ EXAMPLE: example itCompleteIntersectionCover; gives an example"
    result.maps=XX.maps;
    for(n=1; n<=size(Cover); n=n+1)
    {
-	  int i;
+	  int i=n;
 	  intvec v;
 	  iterativeChart C;
 	  m=Cover[n][4];
@@ -5792,6 +5955,24 @@ scheme W=makeProjScheme(0);
 scheme X=makeProjScheme(ideal(x-z,y-z)*ideal(x+z,y-z),W);
 
 iterativeScheme Z=itCompleteIntersectionCover(X,W);
+}
+
+
+proc schemeToIterativeScheme(scheme X)
+{
+	iterativeScheme result;
+	result.maps=X.maps;
+	int i;
+	for(i=1; i<=size(X.cover); i=i+1)
+	{
+		iterativeChartOrigin U;
+		U.entry=X.cover[i];
+		U.label=i;
+		result.cover[i]=U;
+		kill U;
+	}
+	kill i;
+	return(result);
 }
 
 
