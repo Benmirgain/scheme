@@ -5687,6 +5687,21 @@ EXAMPLE: example maps; gives an example"
 		kill i,j;
 	}
 
+	int i;
+	def S=result.preim.in;
+	setring S;
+	for(k=1; k<=ncols(result.dom); k=k+1)
+	{
+		poly p=1;
+		for(i=1; i<=nvars(result.im.in); i=i+1)
+		{
+			p=lcm(p,result.ratFuncs[k][i].den);
+		}
+		result.dom[k]=p;
+		kill p;
+	}
+	kill i,k,S;
+
 	return(result);
    	setring R;
 }
