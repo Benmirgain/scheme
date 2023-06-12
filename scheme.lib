@@ -5991,6 +5991,24 @@ proc schemeToIterativeScheme(scheme X)
 }
 
 
+proc iterativeSchemetoScheme(iterativeScheme X)
+{
+	scheme result;
+	int i,j;
+	for(i=1; i<=size(X.cover); i=i+1)
+	{
+		result.cover[i]=X.cover[i].entry;
+		result.maps[i]=list();
+		for(j=1; j<=size(X.cover); j=j+1)
+		{
+			result.maps[i][j]=maps(i,j,X);
+		}
+	}
+	kill i,j;
+	return(result);
+}
+
+
 static proc printItChart(iterativeChart C)
 {
    C.entry;
