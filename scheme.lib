@@ -87,7 +87,11 @@ union(X,Y); computes the scheme theoretic union of the schemes X and Y
 
 ";
 
-LIB "idealclass.lib";
+
+
+static proc mod_init()
+{
+	LIB "idealclass.lib";
 LIB "sing.lib";
 LIB "elim.lib";
 LIB "polyclass.lib";
@@ -96,9 +100,8 @@ LIB "matrix.lib";
 LIB "grobcov.lib";
 LIB "elim.lib";
 LIB "presolve.lib";
+LIB "gfan.lib";
 
-static proc mod_init()
-{
   newstruct("chart","ring in, ideal value");
   newstruct("chartmap","chart preim, chart im, ideal dom, list ratFuncs");
   newstruct("scheme","list cover, list maps");
@@ -6023,5 +6026,119 @@ static proc printItChartOrigin(iterativeChartOrigin C)
 
 static proc printItScheme(iterativeScheme X)
 {
-   
+   //to be done
+}
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+//   Cone decomposition
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+proc subcones(intmat M)
+{
+	int d=Gfan::dimension(coneViaPoints(M));
+	intmat S[d][ncols(M)];
+	list L;
+
+	L=subsetUtil(M,d,S,1,0,L);
+	kill S;
+	return(L);
+}
+
+
+static proc subsetUtil(intmat M, int d, intmat S, int i, int j, list L)
+{
+	list result=L;
+
+	if(j>=d)
+	{
+		cone c=Gfan::coneViaPoints(S);
+		result=insert(result,c);
+		kill c;
+		return(result);
+	}
+
+	if(i>nrows(M))
+	{
+		return(result);
+	}
+
+	S[j+1,1..ncols(M)]=M[i,1..ncols(M)];
+
+	if(Gfan::dimension(Gfan::coneViaPoints(S))==j+1)
+	{
+		result=subsetUtil(M,d,S,i+1,j+1,result);
+	}
+
+	result=subsetUtil(M,d,S,i+1,j,result);
+
+	return(result);
+}
+
+
+proc fanDecomposition(intmat M, list #)
+{
+	if(size(#)==0)
+	{
+		cone C=Gfan::coneViaPoints(M);
+		int d=Gfan::dimension(C);
+		list L=subcones(M);
+		fan F=Gfan::fanViaCones(C);
+		int i,j,k;
+		for(i=1; i<=size(L); i=i+1)
+		{
+			intmat N=intmat(Gfan::inequalities(L[i]));
+			for(j=1; j<=nrows(N); j=j+1)
+			{
+				fan G=Gfan::emptyFan(Gfan::ambientDimension(C));
+				intmat P[1][ncols(N)];
+				for(k=1; k<=ncols(N); k=k+1)
+				{
+					P[1,k]=N[j,k];
+				}
+				cone D=Gfan::coneViaInequalities(P);
+				for(k=1; k<=Gfan::numberOfConesOfDimension(F,d); k=k+1)
+				{
+				    //"i="+string(i)+"/"+string(size(L))+", j="+string(j)+"/"+string(nrows(N))+", k="+string(k)+"/"+string(Gfan::numberOfConesOfDimension(F,d));
+					cone E;
+					E=Gfan::convexIntersection(Gfan::getCone(F,d,k),D);
+					if(Gfan::dimension(E)==d)
+					{
+						Gfan::insertCone(G,E);
+					}
+					E=Gfan::convexIntersection(Gfan::getCone(F,d,k),Gfan::negatedCone(D));
+					if(Gfan::dimension(E)==d)
+					{
+						Gfan::insertCone(G,E);
+					}
+					kill E;
+				}
+				F=G;
+				kill G,D,P;
+			}
+			kill N;
+		}
+
+		kill C,d,L,i,j,k;
+		return(F);
+		kill F;
+	}else{
+		bigintmat P=bigintmat(#[1]);
+		int i;
+		cone C=Gfan::coneViaPoints(M);
+		list L=subcones(M);
+		for(i=1; i<=size(L); i=i+1)
+		{
+			if(Gfan::containsInSupport(L[i],P))
+			{
+				C=Gfan::convexIntersection(C,L[i]);
+			}
+		}
+
+		kill P,i,L;
+		return(C);
+		kill C;
+	}
 }
