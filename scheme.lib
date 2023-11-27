@@ -6080,57 +6080,15 @@ static proc subsetUtil(intmat M, int d, intmat S, int i, int j, list L)
 
 proc fanDecomposition(intmat M, list #)
 {
-	if(size(#)==0)
+	
+	cone C=Gfan::coneViaPoints(M);
+	int i,j,k;
+	int d=Gfan::dimension(C);
+	list L=subcones(M);
+	fan F=Gfan::emptyFan(Gfan::ambientDimension(C));
+	if(size(#)==1)
 	{
-		cone C=Gfan::coneViaPoints(M);
-		int i,j,k;
-		int d=Gfan::dimension(C);
-		list L=subcones(M);
-		fan F=Gfan::emptyFan(Gfan::ambientDimension(C));
-		list LF=list(C);
-		for(i=1; i<=size(L); i=i+1)
-		{
-			intmat N=intmat(Gfan::inequalities(L[i]));
-			for(j=1; j<=nrows(N); j=j+1)
-			{
-				list G;
-				intmat P[1][ncols(N)]=N[j,1..ncols(N)];
-				cone D=Gfan::coneViaInequalities(P);
-				for(k=1; k<=size(LF); k=k+1)
-				{
-				    "i="+string(i)+"/"+string(size(L))+", j="+string(j)+"/"+string(nrows(N))+", k="+string(k)+"/"+string(size(LF));
-					cone E;
-					E=Gfan::convexIntersection(LF[k],D);
-					if(Gfan::dimension(E)==d)
-					{
-						G=insert(G,E);
-					}
-					E=Gfan::convexIntersection(LF[k],Gfan::negatedCone(D));
-					if(Gfan::dimension(E)==d)
-					{
-						G=insert(G,E);
-					}
-					kill E;
-				}
-				LF=G;
-				kill G,D,P;
-			}
-			kill N;
-		}
-
-		for(i=1; i<=size(LF); i=i+1)
-		{
-			insertCone(F,LF[i]);
-		}
-
-		kill C,d,L,i,j,k;
-		return(F);
-		kill F;
-	}else{
 		bigintmat P=bigintmat(#[1]);
-		int i,j;
-		cone C=Gfan::coneViaPoints(M);
-		list L=subcones(M);
 		for(i=1; i<=size(L); i=i+1)
 		{
 			bigintmat I=Gfan::inequalities(L[i]);
@@ -6144,8 +6102,8 @@ proc fanDecomposition(intmat M, list #)
 				if(S[j,1]>0)
 				{
 					T=I[j,1..nrows(S)];
-					D=coneViaInequalities(T);
-					C=convexIntersection(C,D);
+					D=Gfan::coneViaInequalities(T);
+					C=Gfan::convexIntersection(C,D);
 				}
 			}
 			kill D;
@@ -6153,8 +6111,70 @@ proc fanDecomposition(intmat M, list #)
 			kill I,S,T;
 		}
 
-		kill P,i,j,L;
-		return(C);
-		kill C;
+		i=1;
+		while(i<=size(L))
+		{
+			int alreadyIn=0;
+			j=1;
+			cone D=Gfan::convexIntersection(L[i],C);
+			while((j<i) && (!alreadyIn))
+			{
+				if(D==L[j])
+				{
+					alreadyIn=1;
+				}
+				j=j+1;
+			}
+
+			if((alreadyIn) || (Gfan::dimension(D)<d))
+			{
+				L=delete(L,i);
+			}else{
+				L[i]=D;
+				i=i+1;
+			}
+			kill alreadyIn,D;
+		}
+
+		kill P;
 	}
+	list LF=list(C);
+	for(i=1; i<=size(L); i=i+1)
+	{
+		intmat N=intmat(Gfan::inequalities(L[i]));
+		for(j=1; j<=nrows(N); j=j+1)
+		{
+			list G;
+			intmat P[1][ncols(N)]=N[j,1..ncols(N)];
+			cone D=Gfan::coneViaInequalities(P);
+			for(k=1; k<=size(LF); k=k+1)
+			{
+			    "i="+string(i)+"/"+string(size(L))+", j="+string(j)+"/"+string(nrows(N))+", k="+string(k)+"/"+string(size(LF));
+				cone E;
+				E=Gfan::convexIntersection(LF[k],D);
+				if(Gfan::dimension(E)==d)
+				{
+					G=insert(G,E);
+				}
+				E=Gfan::convexIntersection(LF[k],Gfan::negatedCone(D));
+				if(Gfan::dimension(E)==d)
+				{
+					G=insert(G,E);
+				}
+				kill E;
+			}
+			LF=G;
+			kill G,D,P;
+		}
+		kill N;
+	}
+
+	for(i=1; i<=size(LF); i=i+1)
+	{
+		insertCone(F,LF[i]);
+	}
+
+	kill C,d,L,i,j,k;
+	return(F);
+	kill F;
 }
