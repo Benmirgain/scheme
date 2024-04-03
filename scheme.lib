@@ -6149,7 +6149,7 @@ proc fanDecomposition(intmat M, list #)
 			cone D=Gfan::coneViaInequalities(P);
 			for(k=1; k<=size(LF); k=k+1)
 			{
-			    "i="+string(i)+"/"+string(size(L))+", j="+string(j)+"/"+string(nrows(N))+", k="+string(k)+"/"+string(size(LF));
+			    //"i="+string(i)+"/"+string(size(L))+", j="+string(j)+"/"+string(nrows(N))+", k="+string(k)+"/"+string(size(LF));
 				cone E;
 				E=Gfan::convexIntersection(LF[k],D);
 				if(Gfan::dimension(E)==d)
