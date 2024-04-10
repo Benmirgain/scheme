@@ -1060,6 +1060,9 @@ proc printProjRatMap(projRatMap phi)
 
 
 
+
+
+
 ///////////////////////////////////////////////////////////////////////////////////////////
 //  Basic constructions of schemes
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -3204,6 +3207,7 @@ proc Graph(def phi)
 
 		def R=result.in;
 		setring R;
+		ideal I;
 
 		for(i=1; i<=size(phi.ratFuncs); i=i+1)
 		{
@@ -3215,13 +3219,17 @@ proc Graph(def phi)
 			setring R;
 			poly p=fetch(S,p);
 			poly q=fetch(S,q);
+			I=I+ideal(p,q);
 			result.value=result.value+ideal(q*var(n+i)-p);
 
 			kill p,q;
 			setring S;
 			kill p,q;
 		}
+		setring R;
+		result.value=sat(result.value,I)[1];
 
+		kill I;
 		kill n,i,S,R;
 		setring B;
 		return(result);
@@ -3237,6 +3245,7 @@ proc Graph(def phi)
 
 		def R=result.in;
 		setring R;
+		ideal I;
 
 		for(i=1; i<size(phi.ratFuncs); i=i+1)
 		{
@@ -3250,6 +3259,7 @@ proc Graph(def phi)
 			setring R;
 			poly p=fetch(S,p);
 			poly q=fetch(S,q);
+			I=I+ideal(p,q);
 			result.value=result.value+ideal(q*var(n+i)-p*var(n+j));
 
 			kill p,q;
@@ -3257,7 +3267,10 @@ proc Graph(def phi)
 			kill p,q;
 		}
 		}
+		setring R;
+		result.value=sat(result.value,I)[1];
 
+		kill I;
 		kill n,i,j,S,R;
 		setring B;
 		return(result);
@@ -3758,6 +3771,7 @@ proc Inverse(def phi)
       setring Base;
       return(result);
 	}
+
 	if(typeof(phi)=="projRatMap")
 	{
 	  def Base=basering;
@@ -3932,6 +3946,158 @@ proc Inverse(def phi)
    
       setring Base;
       return(result);
+	}
+
+	if(typeof(phi)=="chartmap")
+	{
+	def Base=basering;
+    def R=phi.preim.in;
+    def S=phi.im.in;
+    chartmap result;
+	result.im=phi.preim;
+	result.preim=phi.im;
+    int i,j,n,m,e,c,k,isdone;
+    n=nvars(R);
+    m=nvars(S);
+    c=char(R);
+   
+    setring R;
+    ideal A=phi.preim.value;
+	ideal D=phi.dom;
+   
+    if(D==0)
+	{
+		setring S;
+		result.dom=ideal(0);
+	}else{
+        setring S;
+        ideal B=phi.im.value;
+	  
+        ring T=c,(x(1..n),y(1..m)),(dp(n),dp(m));
+	    setring T;
+	    ideal Ix,Iy;
+		poly v=1;
+	    for(j=1; j<=n; j=j+1)
+	    {
+	    	Ix=Ix,x(j);
+			v=v*x(j);
+	    }
+	    Ix=simplify(Ix,2);
+	    map f=R,Ix;
+	    kill Ix;
+	    for(j=1; j<=m; j=j+1)
+	    {
+	        Iy=Iy,y(j);
+	    }
+	    Iy=simplify(Iy,2);
+	    map g=S,Iy;
+	    kill Iy;
+	  
+	    setring S;
+	    ideal J,K;
+	    for(j=1; j<=n+m; j=j+1)
+	    {
+	        if(j<=n)
+		    {
+		       J=J,1;
+		    }else{
+		       J=J,var(j-n);
+		    }
+	    }
+	    J=simplify(J,2);
+	    map h=T,J;
+	    kill J;
+	  
+	    setring T;
+	    ideal L=f(A)+g(B);
+	  
+        for(j=1; j<=m; j=j+1)
+        {
+	        setring R;
+            poly r,s;
+		    r=phi.ratFuncs[1][j].num;
+		    s=phi.ratFuncs[1][j].den;
+		 
+		    setring T;
+		    L=L+ideal(f(s)*y(j)-f(r));
+		 
+		    setring R;
+		    kill r,s;
+        }
+	  
+	    setring T;
+		L=sat(L,f(D))[1];
+		ideal LL;
+		list RF;
+		for(j=1; j<=n; j=j+1)
+		{
+			LL=eliminate(L,v/x(j));
+			k=1;
+			isdone=0;
+			while((k<=size(LL))&&(!isdone))
+			{
+				matrix C=coeffs(LL[k],x(j));
+				if(nrows(C)==2)
+				{
+					poly r,s;
+					r=-C[1,1];
+					s=C[2,1];
+
+					setring S;
+					ratFunc F=h(r),h(s);
+					RF=RF+list(F);
+					kill F;
+
+					setring T;
+					kill r,s;
+					isdone=1;
+				}
+				kill C;
+				k=k+1;
+			}
+			if(!isdone)
+			{
+				ERROR("Input is not invertible!");
+			}
+		}
+		
+		setring S;
+		ideal Dom=ideal(1);
+		for(i=1; i<=n; i=i+1)
+		{
+			Dom=intersect(Dom,quotient(ideal(RF[i].den)+B,ideal(RF[i].num)));
+		}
+
+		result.dom=Dom;
+		for(i=1; i<=size(Dom); i=i+1)
+		{
+			result.ratFuncs[i]=list();
+			poly p=Dom[i];
+			poly q;
+			ideal I;
+			for(j=1; j<=n; j=j+1)
+			{
+				I=RF[j].den,B;
+				q=division(p*RF[j].num,I)[1][1,1];
+				result.ratFuncs[i][j]=makeratFunc(q,p);
+			}
+
+			kill p,q,I;
+		}
+
+	    setring S;	  
+	    kill h;
+	    setring T;
+	    kill L,f,g;
+	    kill T; 
+		kill RF;
+	}	      
+
+    setring R;
+    kill A;
+   
+    setring Base;
+    return(result);
 	}
 }
 
