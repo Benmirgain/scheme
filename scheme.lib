@@ -4083,10 +4083,9 @@ proc Inverse(def phi)
 			}
 
 			kill p,q,I;
-		}
+		}	  
 
-	    setring S;	  
-	    kill h;
+	    kill h,Dom,B,K;
 	    setring T;
 	    kill L,f,g;
 	    kill T; 
@@ -4094,10 +4093,29 @@ proc Inverse(def phi)
 	}	      
 
     setring R;
-    kill A;
+    kill A,D;
    
     setring Base;
     return(result);
+	}
+
+	if(typeof(phi)=="morphism")
+	{
+		morphism result;
+		result.preim=phi.im;
+		result.im=phi.preim;
+		int i,j;
+
+		for(i=1; i<=size(phi.im.cover); i=i+1)
+		{
+			result.chartmaps[i]=list();
+			for(j=1; j<=size(phi.preim.cover); j=j+1)
+			{
+				result.chartmaps[i][j]=Inverse(phi.chartmaps[j][i]);
+			}
+		}
+
+		return(result);
 	}
 }
 
