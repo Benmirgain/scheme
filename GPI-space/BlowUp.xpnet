@@ -8,11 +8,15 @@
         <place name="charts" type="string"/>
         <place name="blowUpCharts" type="string"/>
         <place name="assembledCharts" type="list">
-            <token>List()</token>
+            <token>
+                <value>List()</value>
+            </token>
         </place>
         <place name="chartcount" type="int"/>
         <place name="listsize" type="int">
-            <token>0</token>
+            <token>
+                <value>0</value>
+            </token>
         </place>
 
         <transition name="disassemble">
@@ -20,9 +24,14 @@
                 <in name="inScheme" type="string"/>
                 <out name="charts" type="list"/>
                 <out name="chartcount" type="int"/>
+
+                <expression>
+                    ${charts}:=List();
+                    ${chartcount}:=0
+                </expression>
             </defun>
 
-            <connenct-in port="inScheme" place="inScheme"/>
+            <connect-in port="inScheme" place="inScheme"/>
             <connect-out port="chartcount" place="chartcount"/>
             <connect-out-many port="charts" place="charts"/>
         </transition>
@@ -32,9 +41,13 @@
                 <in name="charts" type="string"/>
                 <out name="blowUpCharts" type="list"/>
                 <inout name="chartcount" type="int"/>
+
+                <expression>
+                    ${blowUpCharts}:=List()
+                </expression>
             </defun>
 
-            <connenct-in port="charts" place="charts"/>
+            <connect-in port="charts" place="charts"/>
             <connect-out-many port="blowUpCharts" place="blowUpCharts"/>
             <connect-inout port="chartcount" place="chartcount"/>
         </transition>
@@ -44,6 +57,7 @@
                 <in name="blowUpCharts" type="string"/>
                 <inout name="assembledCharts" type="list"/>
                 <inout name="listsize" type="int"/>
+
                 <expression>
                     ${listsize} := ${listsize}+1;
                 </expression>
@@ -60,13 +74,17 @@
                 <in name="chartcount" type="int"/>
                 <in name="listsize" type="int"/>
                 <out name="outScheme" type="string"/>
+
+                <expression>
+                    ${outScheme}:=""
+                </expression>
             </defun>
 
             <condition>
                 ${chartcount} :eq: ${listsize}
             </condition>
 
-            <connenct-in port="assembledCharts" place="assembledCharts"/>
+            <connect-in port="assembledCharts" place="assembledCharts"/>
             <connect-in port="chartcount" place="chartcount"/>
             <connect-in port="listsize" place="listsize"/>
             <connect-out port="outScheme" place="outScheme"/>
