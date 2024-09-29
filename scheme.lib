@@ -115,7 +115,6 @@ LIB "gfan.lib";
   newstruct("ratFunc","ring in, poly num, poly den");
   newstruct("blowUpMap","scheme blow, scheme base, scheme exDiv, scheme center, list maps");
   newstruct("iterativeScheme","list cover, list maps");
-  newstruct("iterativeChartOrigin","chart entry, int label");
   newstruct("iterativeChart","def parent, chart entry, chartmap parentmap, chartmap parentInverseMap, intvec label");
   newstruct("coherentSheaf","list cover, def space");
   
@@ -165,7 +164,6 @@ LIB "gfan.lib";
   system("install","morphism","=",makeMorphism,1);
   system("install","morphism","*",MorphismCompMorphism,2);
   system("install","iterativeChart","print",printItChart,1);
-  system("install","iterativeChartOrigin","print",printItChartOrigin,1);
   system("install","iterativeScheme","print",printItScheme,1);
 }
 
@@ -4515,8 +4513,10 @@ example
 
 
 
-proc itblowUp(iterativeScheme X, iterativeScheme C)
+proc itblowUp(def X, def C)
 {
+	if((typeof(X)=="iterativeScheme")&&(typeof(C)=="iterativeScheme"))
+	{
 	iterativeScheme B;
 	B.maps=X.maps;
 	coherentSheaf eD;
@@ -4686,7 +4686,174 @@ proc itblowUp(iterativeScheme X, iterativeScheme C)
 	  	kill S;
    	}
 
+	kill i;
 	return(list(B,eD));
+	}
+
+	if((typeof(X)=="iterativeChart")&&(typeof(C)=="iterativeChart"))
+	{
+	list B;
+	int i,n;
+
+	// Computation of the blowup charts
+
+    	def R=X.entry.in;
+		setring R;
+		int m=nvars(R);
+		C.entry.value=std(C.entry.value);
+		int l=size(C.entry.value);
+		ideal A=C.entry.value;
+		ideal Base=X.entry.value;
+		for(int j=1; j<=l; j=j+1)
+		{
+			def S=changevar("x()");
+		 
+			list newvars;
+			for(int k=1; k<=l; k=k+1)
+			{
+		    	if(k!=j)
+		    	{   newvars=newvars+list("y("+string(k)+")");}
+		 	}
+		 	if(size(newvars)!=0)
+		 	{
+				S=addvarsTo(S,newvars,0);
+		 	}
+		 
+		 	setring S;
+		 	chart U=ideal(0);
+		 	chartmap phi;
+		 	phi.preim=U;
+		 	phi.im=X.entry;
+		 	phi.dom=1;
+		 	phi.ratFuncs[1]=list();
+		 	for(k=1; k<=m; k=k+1)
+		 	{
+		    	ratFunc r=var(k);
+		    	phi.ratFuncs[1]=phi.ratFuncs[1]+list(r);
+				kill r;
+		 	}
+		 
+		 
+		 	setring S;
+		 	ideal I=0;
+		 	ideal J=0;
+		 	for(k=1; k<=m; k=k+1)
+		 	{
+		    	I=I+ideal(var(k));
+		 	}
+		 	map f=R,I;
+		 	J=f(A);
+		 	I=f(Base);
+		 	for(k=1; k<=l; k=k+1)
+		 	{
+		    	if(k!=j)
+				{
+			   		I=I+ideal(J[j]*y(k)-J[k]);
+				}
+		 	}
+		 	I=sat(I,ideal(J[j]))[1];
+		 	U.value=I;
+		 	phi.preim=U;
+
+			chartmap psi;
+			psi.preim=X.entry;
+			psi.im=U;
+			setring R;
+			psi.dom=ideal(A[j]);
+			psi.ratFuncs[1]=list();
+			for(k=1; k<=m; k=k+1)
+		 	{
+		    	ratFunc r=var(k);
+		    	psi.ratFuncs[1]=psi.ratFuncs[1]+list(r);
+				kill r;
+		 	}
+			for(k=1; k<=l; k=k+1)
+		 	{
+		    	if(k!=j)
+				{
+					ratFunc r=A[k],A[j];
+		    		psi.ratFuncs[1]=psi.ratFuncs[1]+list(r);
+					kill r;
+				}
+		 	}
+
+			intvec v=X.label;
+			iterativeChart V;
+			V.entry=U;
+			V.parent=X;
+			V.parentmap=phi;
+			V.parentInverseMap=psi;
+			V.label=v,j;
+
+			setring S;
+			B=B+list(V);
+		 
+
+		 	kill J,newvars,S,I,U,phi,k,v,V,psi;
+		 	setring R;
+	  	}
+
+		kill A,Base;
+	  	kill R,m,l,j;
+   	
+
+	// Elimination of variables
+
+	for(i=1; i<=size(B); i=i+1)
+   	{
+		int j;
+	  	def S=B[i].entry.in;
+	  	setring S;
+	  	ideal I=B[i].entry.value;
+	  	list elim=elimpart(I);
+	  	ideal Id=elim[5];
+	  	n=size(elim[2]);
+	  	if(n>0)
+	  	{
+		 	chartmap phi,psi;
+		 	phi.im=B[i].entry;
+		 	psi.preim=B[i].entry;
+		 	psi.dom=1;
+		 	psi.ratFuncs[1]=list();
+		 	for(j=1; j<=nvars(S); j=j+1)
+		 	{
+				if(elim[4][j]!=0)
+				{   
+					psi.ratFuncs[1]=psi.ratFuncs[1]+list(makeratFunc(var(j)));
+				}
+		 	}
+		 	def T=tolessvars(elim[4]);
+
+		 	setring T;
+		 	ideal Im=imap(S,Id);
+		 	map f=S,Im;
+		 	ideal J=std(f(I));
+		 	chart U=J;
+		 	phi.preim=U;
+		 	psi.im=U;
+		 	phi.dom=1;
+		 	phi.ratFuncs[1]=list();
+		 	for(j=1; j<=nvars(S); j=j+1)
+		 	{
+				phi.ratFuncs[1]=phi.ratFuncs[1]+list(makeratFunc(Im[j]));
+		 	}
+
+		 	B[i].entry=U;
+			B[i].parentmap=B[i].parentmap*phi;
+			B[i].parentInverseMap=psi*B[i].parentInverseMap;
+
+		 	kill f,J,Im;
+		 	kill T,phi,psi,U;
+	  	}
+
+	  	setring S;
+	  	kill I,Id,elim,j;
+	  	kill S;
+   	}
+
+	kill i;
+	return(B);
+	}
 }
 
 
@@ -5920,7 +6087,7 @@ EXAMPLE: example itCompleteIntersectionCover; gives an example"
    {
 	  XX.maps=X.maps;
 	  int n=size(X.cover);
-	  iterativeChartOrigin C;
+	  iterativeChart C;
 	  for(int i=1; i<=n; i=i+1)
 	  {
 	     C.entry=X.cover[i];
@@ -5935,7 +6102,7 @@ EXAMPLE: example itCompleteIntersectionCover; gives an example"
    {
 	  WW.maps=W.maps;
 	  int n=size(W.cover);
-	  iterativeChartOrigin C;
+	  iterativeChart C;
 	  for(int i=1; i<=n; i=i+1)
 	  {
 	     C.entry=W.cover[i];
@@ -6167,7 +6334,7 @@ proc schemeToIterativeScheme(scheme X)
 	int i;
 	for(i=1; i<=size(X.cover); i=i+1)
 	{
-		iterativeChartOrigin U;
+		iterativeChart U;
 		U.entry=X.cover[i];
 		U.label=i;
 		result.cover[i]=U;
@@ -6197,12 +6364,6 @@ proc iterativeSchemetoScheme(iterativeScheme X)
 
 
 static proc printItChart(iterativeChart C)
-{
-   C.entry;
-}
-
-
-static proc printItChartOrigin(iterativeChartOrigin C)
 {
    C.entry;
 }
