@@ -1,0 +1,11 @@
+LIB "scheme.lib";
+killall();
+
+int n_vec=4;
+int d=3;
+int b=20;
+intvec v=b:(n_vec*d);
+intmat H=random(b,n_vec,d)+intmat(v,n_vec,d);
+
+def F=fanDecomposition(H);
+
