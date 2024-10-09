@@ -88,10 +88,7 @@ union(X,Y); computes the scheme theoretic union of the schemes X and Y
 ";
 
 
-
-static proc mod_init()
-{
-	LIB "idealclass.lib";
+LIB "idealclass.lib";
 LIB "sing.lib";
 LIB "elim.lib";
 LIB "polyclass.lib";
@@ -102,6 +99,10 @@ LIB "elim.lib";
 LIB "presolve.lib";
 LIB "gfan.lib";
 
+
+
+static proc mod_init()
+{
   newstruct("chart","ring in, ideal value");
   newstruct("chartmap","chart preim, chart im, ideal dom, list ratFuncs");
   newstruct("scheme","list cover, list maps");
