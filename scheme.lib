@@ -637,7 +637,6 @@ static proc notequalScheme(scheme X, scheme Y)
 // Print routine for schemes
 static proc printScheme(scheme X)
 {
-   def R=basering;
    int i,j,k,m,l;
    for(i=1; i<=size(X.cover); i=i+1)
    {
@@ -679,7 +678,6 @@ static proc printScheme(scheme X)
 		 kill T,S;
 	  }
    }
-   setring R;
 }
 
 
@@ -688,7 +686,6 @@ proc ChartToScheme(chart U)
 RETURN: scheme type corresponding to the affine scheme that corresponds to U
 EXAMPLE: example ChartToScheme; creates an example"
 {
-    def R=basering;
 	scheme result;
 	
 	result.cover[1]=U;
@@ -705,7 +702,6 @@ EXAMPLE: example ChartToScheme; creates an example"
 	chartmap Phi=U,U,L;
 	result.maps=list(list(Phi));
 	
-	setring R; 
 	return(result);
 }
 example
@@ -727,11 +723,19 @@ X==Y;
 
 
 proc makeaffVar(ideal I)
+"USAGE: makeaffVar(I); ideal I
+RETURN: creates affine Variety Spec R/I, where R=basering
+EXAMPLE: example makeaffVar; creates an example"
 {
 	affVariety result;
 	result.in=basering;
 	result.value=I;
 	return(result);
+}
+example
+{"EXAMPLE:";
+ring R=0,(x,y,z),dp;
+affVariety X=ideal(x2-y);
 }
 
 
@@ -748,7 +752,6 @@ proc makeprojVar(ideal I)
 
 proc makeProduct(list #)
 {
-	def B=basering;
 	product result;
 	int i,j,k;
 
@@ -756,10 +759,10 @@ proc makeProduct(list #)
 	{
 	if(size(#)==1)
 	{
-		result.in=B;
+		result.in=basering;
 		result.value=#[1];
 		intvec iv;
-		for(i=1; i<=nvars(B); i=i+1)
+		for(i=1; i<=nvars(result.in); i=i+1)
 		{
 			iv[i]=deg(var(i));
 		}
@@ -771,14 +774,14 @@ proc makeProduct(list #)
 
 	if(typeof(#[2])=="int")
 	{
-		result.in=B;
+		result.in=basering;
 		result.value=#[1];
 
 		int varcount=0;
 		for(i=2; i<=size(#); i=i+1)
 		{
-			intvec iv=0:nvars(B);
-			if(varcount+#[i]>nvars(B))
+			intvec iv=0:nvars(result.in);
+			if(varcount+#[i]>nvars(result.in))
 			{   ERROR("Input incorrect")}
 			for(j=1; j<=#[i]; j=j+1)
 			{
@@ -790,7 +793,7 @@ proc makeProduct(list #)
 			kill iv;
 		}
 
-		if(varcount!=nvars(B))
+		if(varcount!=nvars(result.in))
 		{   ERROR("Input incorrect")}
 		kill varcount;
 
@@ -799,12 +802,12 @@ proc makeProduct(list #)
 
 	if(typeof(#[2])=="poly")
 	{
-		result.in=B;
+		result.in=basering;
 		result.value=#[1];
 
 		poly pvars1=1;
 		poly pvars2=1;
-		for(i=1; i<=nvars(B); i=i+1)
+		for(i=1; i<=nvars(result.in); i=i+1)
 		{
 			pvars2=pvars2*var(i);
 		}
@@ -812,7 +815,7 @@ proc makeProduct(list #)
 		for(i=2; i<=size(#); i=i+1)
 		{
 			intvec iv;
-			for(j=1; j<=nvars(B); j=j+1)
+			for(j=1; j<=nvars(result.in); j=j+1)
 			{
 				if(#[i]/var(j)!=0)
 				{
@@ -942,31 +945,28 @@ proc makeProduct(list #)
 
 proc printAffVariety(affVariety X)
 {
-	def B=basering;
 	def R=X.in;
 	setring R;
     "ring = "+string(R);
     "quotient = "+string(X.value);
-    setring B;
+	kill R;
 }
 
 
 
 proc printProjVariety(projVariety X)
 {
-	def B=basering;
 	def R=X.in;
 	setring R;
     "ring = "+string(R);
     "quotient = "+string(X.value);
-    setring B;
+	kill R;
 }
 
 
 
 proc printAffRatMap(affRatMap phi)
 {
-	def B=basering;
 	def R=phi.preim.in;
 	def S=phi.im.in;
     int i,k;
@@ -993,14 +993,13 @@ proc printAffRatMap(affRatMap phi)
     }
     st=st+string(phi.ratFuncs[m])+" )";
     st;
-    setring B;
+	kill n,m,i,k,R,S,st;
 }
 
 
 
 proc printProjRatMap(projRatMap phi)
 {
-	def B=basering;
 	def R=phi.preim.in;
 	def S=phi.im.in;
     int i,k;
@@ -1027,7 +1026,7 @@ proc printProjRatMap(projRatMap phi)
     }
     st=st+string(phi.ratFuncs[m])+" )";
     st;
-    setring B;
+	kill n,m,i,k,R,S,st;	
 }
 
 

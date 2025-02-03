@@ -1,0 +1,46 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+ring R=0,(a,b),dp;
+affVariety Xaff=ideal(0);
+Xaff;
+
+ring S=0,(x,y,z),dp;
+affVariety Yaff=ideal(y-xz);
+Yaff;
+
+setring R;
+affRatMap phi;
+phi.preim=Xaff;
+phi.im=Yaff;
+phi.ratFuncs=list(makeratFunc(a),makeratFunc(a,b),makeratFunc(1,b));
+phi;
+
+affRatMap psi=Inverse(phi);
+phi*psi;
+psi*phi;
+kill phi,psi;
+
+
+
+setring R;
+projVariety Xproj=ideal(0);
+Xaff;
+
+setring S;
+projVariety Yproj=ideal(y2-xz);
+Yaff;
+
+setring R;
+projRatMap phi;
+phi.preim=Xproj;
+phi.im=Yproj;
+phi.ratFuncs=list(makeratFunc(a2),makeratFunc(ab),makeratFunc(b2));
+phi;
+
+projRatMap psi=Inverse(phi);
+phi*psi;
+psi*phi;

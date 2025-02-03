@@ -68,7 +68,6 @@ scheme Zinv=InvImage(Z,phi);
 Zinv;
 
 morphism psi=Inverse(phi);
-basering;
 morphism Id=phi*psi;
 Id.chartmaps;
 
