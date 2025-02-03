@@ -476,7 +476,7 @@ psi==phi;
 static proc printChart(chart C)
 {
    def R=basering;
-   def S=C.in;
+   def S=C.r_value;
    setring S;
    "ring = "+string(S);
    "quotient = "+string(C.value);
@@ -487,8 +487,8 @@ static proc printChart(chart C)
 static proc printChartmap(chartmap phi)
 {
    def B=basering;
-   def R=phi.preim.in;
-   def S=phi.im.in;
+   def R=phi.preim.r_value;
+   def S=phi.im.r_value;
    int i,k;
 
    setring R;
@@ -522,7 +522,7 @@ static proc equalChartmap(chartmap phi, chartmap psi)
       return(0);
    }
    
-   def R=basering;
+   bR=basering;
    def S=phi.preim.in;
    setring S;
    

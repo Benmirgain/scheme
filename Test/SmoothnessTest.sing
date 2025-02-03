@@ -1,0 +1,19 @@
+LIB "scheme.lib";
+killall();
+
+ring R=0,(x,y,z),dp;
+scheme X=makeProjScheme(x2y3z5);
+isSmooth(X);
+
+X=makeProjScheme(ideal(xyz-x3));
+isSmooth(X);
+
+X=makeAffineScheme(ideal(x2y-x));
+isSmooth(X);
+
+X=makeProjScheme(y2x-x3-x2z);
+isSmooth(X);
+
+scheme Z=makeProjScheme(ideal(x,y),X);
+list L=blowUp(X,Z);
+isSmooth(L[1]);

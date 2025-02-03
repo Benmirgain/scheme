@@ -1,0 +1,164 @@
+LIB "scheme.lib";
+killall();
+
+ring R=0,(x,y,z),dp;
+scheme X=makeProjScheme(xz-y2);
+ring S=0,(a,b),dp;
+scheme Y=makeProjScheme(0);
+
+def T=X.cover[1].in;
+setring T;
+Ideal Dom=1;
+ratFunc F=y;
+chartmap phi=X.cover[1],Y.cover[1],Dom,F;
+list L=list(list(phi,1,1));
+kill T;
+
+def T=X.cover[1].in;
+setring T;
+Dom=y;
+F=1,y;
+phi=X.cover[1],Y.cover[2],Dom,F;
+L=L+list(list(phi,1,2));
+kill T;
+
+def T=X.cover[2].in;
+setring T;
+Dom=1;
+F=z;
+phi=X.cover[2],Y.cover[1],Dom,F;
+L=L+list(list(phi,2,1));
+kill T;
+
+def T=X.cover[2].in;
+setring T;
+Dom=1;
+F=x;
+phi=X.cover[2],Y.cover[2],Dom,F;
+L=L+list(list(phi,2,2));
+kill T;
+
+def T=X.cover[3].in;
+setring T;
+Dom=x;
+F=y,x;
+phi=X.cover[3],Y.cover[1],Dom,F;
+L=L+list(list(phi,3,1));
+kill T;
+
+def T=X.cover[3].in;
+setring T;
+Dom=1;
+F=y;
+phi=X.cover[3],Y.cover[2],Dom,F;
+L=L+list(list(phi,3,2));
+
+
+morphism phi=X,Y,L;
+phi.preim.cover;
+phi.im.cover;
+phi.chartmaps;
+
+setring S;
+scheme Z=makeProjScheme(ideal(3a-2b),Y);
+scheme Zinv=InvImage(Z,phi);
+Zinv;
+
+morphism psi=Inverse(phi);
+morphism Id=phi*psi;
+Id.chartmaps;
+
+
+
+killall();
+//Image Test
+ring R=0,(x,y),dp;
+scheme X=makeProjScheme(0);
+scheme Z=makeProjScheme(ideal(x-2y),X);
+ring S=0,(a,b,c,d),dp;
+scheme Y=makeProjScheme(0);
+
+def T=X.cover[1].in;
+setring T;
+Ideal Dom=1;
+ratFunc F1=y;
+ratFunc F2=y2;
+ratFunc F3=y3;
+chartmap f=X.cover[1],Y.cover[1],Dom,F1,F2,F3;
+list L=list(list(f,1,1));
+kill T;
+
+def T=X.cover[1].in;
+setring T;
+Dom=y;
+F1=1,y;
+F2=y;
+F3=y2;
+f=X.cover[1],Y.cover[2],Dom,F1,F2,F3;
+L=L+list(list(f,1,2));
+kill T;
+
+def T=X.cover[1].in;
+setring T;
+Dom=y;
+F1=1,y2;
+F2=1,y;
+F3=y;
+f=X.cover[1],Y.cover[3],Dom,F1,F2,F3;
+L=L+list(list(f,1,3));
+kill T;
+
+def T=X.cover[1].in;
+setring T;
+Dom=y;
+F1=1,y3;
+F2=1,y2;
+F3=1,y;
+f=X.cover[1],Y.cover[4],Dom,F1,F2,F3;
+L=L+list(list(f,1,4));
+kill T;
+
+def T=X.cover[2].in;
+setring T;
+Dom=x;
+F1=1,x;
+F2=1,x2;
+F3=1,x3;
+f=X.cover[2],Y.cover[1],Dom,F1,F2,F3;
+L=L+list(list(f,2,1));
+kill T;
+
+def T=X.cover[2].in;
+setring T;
+Dom=x;
+F1=x;
+F2=1,x;
+F3=1,x2;
+f=X.cover[2],Y.cover[2],Dom,F1,F2,F3;
+L=L+list(list(f,2,2));
+kill T;
+
+def T=X.cover[2].in;
+setring T;
+Dom=x;
+F1=x2;
+F2=x;
+F3=1,x;
+f=X.cover[2],Y.cover[3],Dom,F1,F2,F3;
+L=L+list(list(f,2,3));
+kill T;
+
+def T=X.cover[2].in;
+setring T;
+Dom=1;
+F1=x3;
+F2=x2;
+F3=x;
+f=X.cover[2],Y.cover[4],Dom,F1,F2,F3;
+L=L+list(list(f,2,4));
+
+morphism phi=X,Y,L;
+
+scheme XIm=Image(phi);
+
+scheme ZIm=Image(phi,Z);

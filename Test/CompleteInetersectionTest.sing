@@ -1,0 +1,9 @@
+LIB "scheme.lib";
+killall();
+
+ring R=0,(x,y,z),dp;
+scheme X=makeProjScheme(0);
+scheme Z=makeProjScheme(ideal(x-z,y-z)*ideal(x+z,y-z),X);
+
+list LL=CompleteIntersectionCover(Z,X);
+LL[1];

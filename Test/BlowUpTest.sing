@@ -1,0 +1,30 @@
+LIB "scheme.lib";
+killall();
+
+ring R=0,(x,y,z),dp;
+scheme X=makeProjScheme(ideal(0));
+scheme Y=makeProjScheme(ideal(x-z,y-z),X);
+list L=blowUp(X,Y);
+   
+"Affine cover of the blow-up";
+L[1].cover;
+   
+"Maps between the affine charts";
+L[1].maps;
+   
+"Exeptional divisor";
+L[3].cover;
+
+
+X=makeProjScheme(ideal(x2z-y3-y2z));
+Y=makeProjScheme(ideal(x,y),X);
+L=blowUp(X,Y);
+   
+"Affine cover of the blow-up";
+L[1].cover;
+   
+"Maps between the affine charts";
+L[1].maps;
+   
+"Exeptional divisor";
+L[3].cover;
