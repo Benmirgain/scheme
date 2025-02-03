@@ -1,4 +1,7 @@
-LIB "scheme.lib";
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
 killall();
 
 ring R=0,(x,y,z),dp;
@@ -10,48 +13,48 @@ def T=X.cover[1].in;
 setring T;
 Ideal Dom=1;
 ratFunc F=y;
-chartmap phi=X.cover[1],Y.cover[1],Dom,F;
-list L=list(list(phi,1,1));
+chartmap  f=X.cover[1],Y.cover[1],Dom,F;
+list L=list(list(f,1,1));
 kill T;
 
 def T=X.cover[1].in;
 setring T;
 Dom=y;
 F=1,y;
-phi=X.cover[1],Y.cover[2],Dom,F;
-L=L+list(list(phi,1,2));
+ f=X.cover[1],Y.cover[2],Dom,F;
+L=L+list(list(f,1,2));
 kill T;
 
 def T=X.cover[2].in;
 setring T;
 Dom=1;
 F=z;
-phi=X.cover[2],Y.cover[1],Dom,F;
-L=L+list(list(phi,2,1));
+f=X.cover[2],Y.cover[1],Dom,F;
+L=L+list(list(f,2,1));
 kill T;
 
 def T=X.cover[2].in;
 setring T;
 Dom=1;
 F=x;
-phi=X.cover[2],Y.cover[2],Dom,F;
-L=L+list(list(phi,2,2));
+f=X.cover[2],Y.cover[2],Dom,F;
+L=L+list(list(f,2,2));
 kill T;
 
 def T=X.cover[3].in;
 setring T;
 Dom=x;
 F=y,x;
-phi=X.cover[3],Y.cover[1],Dom,F;
-L=L+list(list(phi,3,1));
+f=X.cover[3],Y.cover[1],Dom,F;
+L=L+list(list(f,3,1));
 kill T;
 
 def T=X.cover[3].in;
 setring T;
 Dom=1;
 F=y;
-phi=X.cover[3],Y.cover[2],Dom,F;
-L=L+list(list(phi,3,2));
+f=X.cover[3],Y.cover[2],Dom,F;
+L=L+list(list(f,3,2));
 
 
 morphism phi=X,Y,L;
@@ -65,6 +68,7 @@ scheme Zinv=InvImage(Z,phi);
 Zinv;
 
 morphism psi=Inverse(phi);
+basering;
 morphism Id=phi*psi;
 Id.chartmaps;
 

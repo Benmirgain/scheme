@@ -1,4 +1,7 @@
-LIB "scheme.lib";
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
 killall();
 
 int n_vec=4;

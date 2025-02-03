@@ -1,4 +1,7 @@
-LIB "scheme.lib";
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
 killall();
 
 ring R=0,(x,y,z),dp;

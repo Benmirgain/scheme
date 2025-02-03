@@ -199,7 +199,6 @@ ASSUME: The inputs all lie in general position in the same ambient space and
 RETURN: The intersection number of the inputs
 EXAMPLE: example IntersectionNumber; shows an example"
 {
-    def S=basering;
     int i,j,k,l;
 	if(typeof(#[1])!="divisor")
 	{   ERROR("Wrong inputs!");}
@@ -262,10 +261,8 @@ EXAMPLE: example IntersectionNumber; shows an example"
 			result=result+d;
 			kill d,R;
 	    }
-		setring S;
 	}
 	
-	setring S;
 	return(result);
 }
 example
@@ -313,17 +310,14 @@ static proc equalChart(chart U, chart V)
    {
       return(0);
    }else{
-      def R=basering;
 	  def S=U.in;
 	  setring S;
 	  
 	  if((std(quotient(U.value,V.value))!=1)&&(std(quotient(V.value,U.value))!=1))
 	  {
-	     setring R;
 		 return(0);
 	  }
 	  
-	  setring R;
 	  return(1);
    }
 }
@@ -353,7 +347,6 @@ EXAMPLE: example makeChartmap; creates an example"
    int i,j;
    intvec iv;
    
-   def R=basering;
    def S=Preim.in;
    def SS=Im.in;
    
@@ -445,7 +438,6 @@ EXAMPLE: example makeChartmap; creates an example"
    }
    
    kill Dom,f;
-   setring R;
    return(result);
 }
 example
@@ -475,18 +467,15 @@ psi==phi;
 // Print routine for chart
 static proc printChart(chart C)
 {
-   def R=basering;
    def S=C.r_value;
    setring S;
    "ring = "+string(S);
    "quotient = "+string(C.value);
-   setring R;
 }
 
 // Print routine for chartmap
 static proc printChartmap(chartmap phi)
 {
-   def B=basering;
    def R=phi.preim.r_value;
    def S=phi.im.r_value;
    int i,k;
@@ -511,7 +500,6 @@ static proc printChartmap(chartmap phi)
    st=st+string(phi.ratFuncs[k][m])+" )";
    st;
    }
-   setring B;
 }
 
 // Used for comparing chartmaps
@@ -522,13 +510,11 @@ static proc equalChartmap(chartmap phi, chartmap psi)
       return(0);
    }
    
-   bR=basering;
    def S=phi.preim.in;
    setring S;
    
    if(size(phi.dom)!=size(psi.dom))
    {
-      setring R;
 	  return(0);
    }
    
@@ -537,7 +523,6 @@ static proc equalChartmap(chartmap phi, chartmap psi)
    {
       if(phi.dom[i]!=psi.dom[i])
 	  {
-	     setring R;
 		 return(0);
 	  }
    }
@@ -550,14 +535,12 @@ static proc equalChartmap(chartmap phi, chartmap psi)
 	     poly f=phi.ratFuncs[i][j].num*psi.ratFuncs[i][j].den-psi.ratFuncs[i][j].num*phi.ratFuncs[i][j].den;
 		 if(std(reduce(f,sat(phi.preim.value,ideal(phi.dom[i]))))!=0)
 		 {
-		    setring R;
 		    return(0);
 		 }
 		 kill f;
       }
    }
    
-   setring R;
    return(1);
 }
 
@@ -573,17 +556,14 @@ static proc equalAffVariety(affVariety X, affVariety Y)
 	{
 		return(0);
 	}
-	def B=basering;
 	def R=X.in;
 	setring R;
 	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
 	{
-		setring B;
 		return(1);
 	}
 	else
 	{
-		setring B;
 		return(0);
 	}
 }
@@ -599,17 +579,14 @@ static proc equalProjVariety(projVariety X, projVariety Y)
 	{
 		return(0);
 	}
-	def B=basering;
 	def R=X.in;
 	setring R;
 	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
 	{
-		setring B;
 		return(1);
 	}
 	else
 	{
-		setring B;
 		return(0);
 	}
 }

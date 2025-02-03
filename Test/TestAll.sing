@@ -1,6 +1,37 @@
+system("--no-out",1);
+option(noloadProc);
+option(noredefine);
+LIB "scheme.lib";
+
+system("--no-out",0);
+"starting BlowUpTest.sing";
+system("--no-out",1);
 <"BlowUpTest.sing";
-<"CompleteInetersectionTest.sing";
+
+system("--no-out",0);
+"starting CompleteIntersectionTest.sing";
+system("--no-out",1);
+<"CompleteIntersectionTest.sing";
+
+
+system("--no-out",0);
+"starting ConeDecompTest.sing";
+system("--no-out",1);
 <"ConeDecompTest.sing";
+
+system("--no-out",0);
+"starting itSchemeTest.sing";
+system("--no-out",1);
 <"itSchemeTest.sing";
+
+system("--no-out",0);
+"starting MorphismTest.sing";
+system("--no-out",1);
 <"MorphismTest.sing";
+
+system("--no-out",0);
+"starting SmoothnessTest.sing";
+system("--no-out",1);
 <"SmoothnessTest.sing";
+system("--no-out",0);
+killall();
