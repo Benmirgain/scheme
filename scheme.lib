@@ -735,11 +735,14 @@ EXAMPLE: example makeaffVar; creates an example"
 example
 {"EXAMPLE:";
 ring R=0,(x,y,z),dp;
-affVariety X=ideal(x2-y);
+affVariety X=ideal(x2z-y3);
 }
 
 
 proc makeprojVar(ideal I)
+"USAGE: makeprojVar(I); ideal I
+RETURN: creates affine Variety Proj R/I, where R=basering
+EXAMPLE: example makeaffVar; creates an example"
 {
 	if(!homog(I))
 	{   ERROR(Input has to be homogeneous)}
@@ -747,6 +750,11 @@ proc makeprojVar(ideal I)
 	result.in=basering;
 	result.value=I;
 	return(result);
+}
+example
+{"EXAMPLE:";
+ring R=0,(x,y,z),dp;
+projVariety X=ideal(x2z-y3);
 }
 
 
@@ -1282,7 +1290,6 @@ RETURN: The Fibre Product of X and Y
 EXAMPLE: example FibreProduct; shows an example"
 {
    scheme result;
-   def R=basering;
    int i,j,n,m,k,l;
    intvec iv,jv;
    
@@ -1452,7 +1459,6 @@ EXAMPLE: example intersection; shows an example"
    if(size(X.cover)!=size(Y.cover))
    {   ERROR("Inputs not compatible");}
    
-   def R=basering;
    scheme result;
    int i,j;
    for(i=1; i<=size(X.cover); i=i+1)
@@ -1480,7 +1486,6 @@ EXAMPLE: example intersection; shows an example"
       }
    }
    
-   setring R;
    return(result);
 }
 example
@@ -1504,7 +1509,6 @@ EXAMPLE: example union; shows an example"
    if(size(X.cover)!=size(Y.cover))
    {   ERROR("Inputs not compatible");}
    
-   def R=basering;
    scheme result;
    int i,j;
    for(i=1; i<=size(X.cover); i=i+1)
@@ -1532,7 +1536,6 @@ EXAMPLE: example union; shows an example"
       }
    }
    
-   setring R;
    return(result);
 }
 example
@@ -1552,7 +1555,6 @@ proc ReducedScheme(scheme X)
 RETURN: The associated reduced scheme
 EXAMPLE: example ReducedScheme; shows an example"
 {
-   def R=basering;
    scheme result;
    int i,j;
    for(i=1; i<=size(X.cover); i=i+1)
@@ -1577,7 +1579,6 @@ EXAMPLE: example ReducedScheme; shows an example"
       }
    }
    
-   setring R;
    return(result);
 }
 example
@@ -1608,7 +1609,6 @@ proc dimension(scheme X)
 RETURN: The dimension of the scheme X
 EXAMPLE: example dimension; shows an example"
 {
-    def R=basering;
     int d=-1;
     for(int i=1; i<=size(X.cover); i=i+1)
 	{
@@ -1619,7 +1619,6 @@ EXAMPLE: example dimension; shows an example"
 	   kill S;
 	}
 	
-	setring R;
 	return(d);
 }
 example
@@ -1647,7 +1646,6 @@ RETURN: A list L of the irreducible components and their associated points
 			L[i][2] is the associated point of the i-th component
 EXAMPLE: example IrredDec; shows an example"
 {
-    def R=basering;
 	list Dec;
 	
 	int i,j,k,t;
@@ -1708,7 +1706,6 @@ EXAMPLE: example IrredDec; shows an example"
 	   Dec=list(list(X,X));
 	}
 	
-	setring R;
 	return(Dec);
 }
 example
@@ -1730,21 +1727,18 @@ proc isReduced(scheme X)
 RETURN: 1 if the scheme is reduced; 0 otherwise
 EXAMPLE: example isReduced; shows an example"
 {
-   def R=basering;
    for(int i=1; i<=size(X.cover); i=i+1)
    {
       def S=X.cover[i].in;
 	  setring S;
 	  if(std(quotient(X.cover[i].value,radical(X.cover[i].value)))!=1)
-	  {
-         setring R;	  
+	  { 
 	     return(0);
 	  }
 	  
 	  kill S;
    }
    
-   setring R;
    return(1);
 }
 example
@@ -1775,7 +1769,6 @@ proc makeDivisor(list #)
 RETURN: The divisor D=m1*[Y1]+m2*[Y2]+...
 EXAMPLE: example makeDivisor; shows an example"
 {
-   def R=basering;
    if(typeof(#[size(#)])!="scheme")
    { ERROR("Last entry must a scheme")}
    scheme X=#[size(#)];
@@ -1788,7 +1781,6 @@ EXAMPLE: example makeDivisor; shows an example"
 	  result.mults[i]=#[i][2];
    }
    
-   setring R;
    return(result);
 }
 example
@@ -1826,7 +1818,6 @@ static proc AddDivisor(divisor C, divisor D)
     if(C.space!=D.space)
     {   ERROR("Divisors incompatible.");}
     
-	def R=basering;
 	divisor result=C;
 	result.space=C.space;
 	int i,k,check;
@@ -1856,7 +1847,6 @@ static proc AddDivisor(divisor C, divisor D)
 	   }
 	}
 	
-	setring R;
 	return(result);
 }
 
@@ -1938,7 +1928,6 @@ F==H;
 // Print routine for ratFunc
 static proc printratFunc(ratFunc r)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    if(r.den==1)
@@ -1947,14 +1936,12 @@ static proc printratFunc(ratFunc r)
    } else {
       string(r.num)+" / "+string(r.den);
    }
-   setring R;
 }
 
 
 // Gives ratFunc as a string
 static proc stringratFunc(ratFunc r)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    if(r.den==1)
@@ -1963,7 +1950,6 @@ static proc stringratFunc(ratFunc r)
    } else {
       string st=string(r.num)+" / "+string(r.den);
    }
-   setring R;
    return(st);
 }
 
@@ -1971,11 +1957,9 @@ static proc stringratFunc(ratFunc r)
 // Used for comparing ratFuncs
 static proc equalratFunc(ratFunc r, ratFunc q)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    int requalq = (r.num*q.den)==(r.den*q.num);
-   setring R;
    return(requalq);
 }
 
@@ -1990,11 +1974,9 @@ static proc notequalratFunc(ratFunc F, ratFunc G)
 // Multiplication of ratFuncs
 static proc multratFunc(ratFunc r, ratFunc q)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    ratFunc rtimesq = r.num*q.num, r.den*q.den;
-   setring R;
    return(rtimesq);
 }
 
@@ -2002,14 +1984,12 @@ static proc multratFunc(ratFunc r, ratFunc q)
 // Division of ratFuncs
 static proc divideratFunc(ratFunc r, ratFunc q)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    ratFunc zero=0,1;
    if(q==zero)
    {  ERROR("Cannot divide by zero!!!")}
    ratFunc rdivq = r.num*q.den, r.den*q.num;
-   setring R;
    return(rdivq);
 }
 
@@ -2017,11 +1997,9 @@ static proc divideratFunc(ratFunc r, ratFunc q)
 // Addition of ratFuncs
 static proc addratFunc(ratFunc r, ratFunc q)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    ratFunc rplusq = r.num*q.den+r.den*q.num, r.den*q.den;
-   setring R;
    return(rplusq);
 }
 
@@ -2029,11 +2007,9 @@ static proc addratFunc(ratFunc r, ratFunc q)
 // Substraction of ratFuncs
 static proc subratFunc(ratFunc r, ratFunc q)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    ratFunc rminusq = r.num*q.den-r.den*q.num, r.den*q.den;
-   setring R;
    return(rminusq);
 }
 
@@ -2041,7 +2017,6 @@ static proc subratFunc(ratFunc r, ratFunc q)
 // Exponents of ratFuncs
 static proc expratFunc(ratFunc r, int n)
 {
-   def R=basering;
    def SS=r.in;
    setring SS;
    ratFunc zero=0,1;
@@ -2054,7 +2029,6 @@ static proc expratFunc(ratFunc r, int n)
 	  {   ERROR("Negative exponent not allowed for 0!!!");}
 	  rexpn=r.den^(-n),r.num^(-n);
    }
-   setring R;
    return(rexpn);
 }
 
@@ -2935,7 +2909,6 @@ proc Domain(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-		def R=basering;
 		def S=phi.preim.in;
 		setring S;
 		int n=nvars(phi.im.in);
@@ -2953,11 +2926,9 @@ proc Domain(def phi)
 		}
 
 		return(Dom);
-		setring R;
 	}else{
 	if(typeof(phi)=="projRatMap")
 	{
-		def R=basering;
 		def S=phi.preim.in;
 		setring S;
 		int n=nvars(phi.im.in);
@@ -2985,7 +2956,6 @@ proc Domain(def phi)
 
 		Dom.value=sat(Dom.value,Z);
 		return(Dom);
-		setring R;
 	}}
 }
 

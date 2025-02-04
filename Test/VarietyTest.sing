@@ -28,19 +28,32 @@ kill phi,psi;
 
 setring R;
 projVariety Xproj=ideal(0);
-Xaff;
+Xproj;
 
 setring S;
 projVariety Yproj=ideal(y2-xz);
-Yaff;
+Yproj;
 
 setring R;
 projRatMap phi;
 phi.preim=Xproj;
 phi.im=Yproj;
-phi.ratFuncs=list(makeratFunc(a2),makeratFunc(ab),makeratFunc(b2));
+phi.ratFuncs=list(makePoly(a2),makePoly(ab),makePoly(b2));
 phi;
 
 projRatMap psi=Inverse(phi);
 phi*psi;
 psi*phi;
+kill phi,psi,R,S;
+
+
+
+/*ring R=0,(a,b,c,d),wp(2,3,4,3);
+ideal I=a6-a3b2+b4,c3-d4;
+product P1=makeProduct(I);
+product P2=makeProduct(I,2,2);
+
+I=a6-a4c+a2c2-c3,b4+b3d+b2d2-bd3-d4;
+product P3=makeProduct(I,ac,bd);
+
+product P=makeProduct(Xaff,P1,Yproj,P2,P3);*/
