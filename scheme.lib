@@ -2046,41 +2046,67 @@ ASSUME: r_1,...,r_n belong to the same ring and n=nvars(F.in)
 RETURN: F(r_1,...,r_n)
 EXAMPLE: example PolyCompratFunc; creates an example"
 {
-   def R=basering;
    def S=F.in;
    setring S;
    poly Fp=F.value;
    int n=size(#);
+   int k;
    if(n!=nvars(S))
    {   ERROR("Wrong number of arguments!!!");}
    
-   list rl=ringlist(S);
-   list newvars=list();
-   for(int k=1; k<=n; k=k+1)
-   {
-	  newvars=newvars+list("x("+string(k)+")");
-   }
-   newvars=newvars+list("t");	 
-   rl[2]=newvars;
-   rl[3][1][2]=rl[3][1][2],1;
-   def newS=ring(rl);
+   
+   def newS=changevar("x()");
+   setring newS;
+   newS=extendring(1,"t","dp",1);
    setring newS;
    
-   ideal I=var(1);
-   for(k=2; k<=n; k=k+1)
-   {
-	  I=I,ideal(var(k));
-   }
-   map phi=S,I;
-   poly f=phi(Fp);
+   poly f=fetch(S,Fp);
+   kill S;
    f=homog(f,t);
    int d=deg(f);
    
+   if(typeof(#[1])!="ratFunc")
+   {   ERROR("Arguments after first need to be of type ratFunc!");}
    def SS=#[1].in;
    setring SS;
    poly g=1;
    for(k=1; k<=n; k=k+1)
    {
+	    if(typeof(#[k])!="ratFunc")
+   		{   ERROR("Arguments after first need to be of type ratFunc!");}
+
+	   if(SS!=#[k].r_num)
+	   {
+		    def T=#[k].r_num;
+			if((nvars(SS)==nvars(T)) && (char(SS)==char(T)))
+			{
+				setring T;
+				poly p=#[k].num;
+				setring SS;
+				#[k].num=fetch(T,p);
+				kill T;
+			}else{
+				ERROR("ratFuncs from different rings!!");
+			}
+			kill T;
+	   }
+
+	   if(SS!=#[k].r_den)
+	   {
+		    def T=#[k].r_den;
+			if((nvars(SS)==nvars(T)) && (char(SS)==char(T)))
+			{
+				setring T;
+				poly p=#[k].den;
+				setring SS;
+				#[k].den=fetch(T,p);
+				kill T;
+			}else{
+				ERROR("ratFuncs from different rings!!");
+			}
+			kill T;
+	   }
+
 	  g=g*#[k].den;
    }
    ideal J=(g/#[1].den)*#[1].num;
@@ -2092,7 +2118,8 @@ EXAMPLE: example PolyCompratFunc; creates an example"
    map psi=newS,J;
    ratFunc result=psi(f),g^d;
    
-   setring R;
+   kill J,psi,g,d,n,k;
+   kill newS,SS;
    return(result);
 }
 example
@@ -2115,13 +2142,11 @@ ASSUME: r_1,...,r_n belong to the same ring and n=nvars(F.in)
 RETURN: F(r_1,...,r_n)
 EXAMPLE: example ratFuncCompratFunc; creates an example"
 {
-   def R=basering;
    def S=r.in;
    setring S;
    if(size(#)!=nvars(S))
    {   ERROR("Wrong number of arguments!!!");}
    ratFunc result=PolyCompratFunc(r.num,#)/PolyCompratFunc(r.den,#);
-   setring R;
    return(result);
 }
 example
@@ -2145,7 +2170,6 @@ ASSUME: I.in=phi.im.in
 RETURN: Ideal defining the inverse image under phi of the closed subscheme defined by I
 EXAMPLE: example ChartmapCompIdeal; creates an example"
 {
-   def R=basering;
    def S=phi.preim.in;
    def SS=phi.im.in;
    setring SS;
@@ -2190,9 +2214,9 @@ EXAMPLE: example ChartmapCompIdeal; creates an example"
    {
       J=intersect(J,L[i].value);
    }
-   result=std(J);
+   result=J;
+   kill S,i,m,n,j,r;
    
-   setring R;
    return(result);
 }
 example

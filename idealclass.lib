@@ -1,5 +1,5 @@
 //
-version="version idealclass.lib 1.0.0.0 Apr_2021 ";
+version="version idealclass.lib 1.0.0.1 Apr_2021 ";
 category="Algebraic geometry"; 
 info="
 LIBRARY: idealclass.lib  Ring independent ideal data type
@@ -50,19 +50,19 @@ Ideal J=ideal(x+y,y2+1);
 I+J;
 I*J;
 J^2;
+string(I);
 }
 
 
-static proc printIdeal(Ideal I)
+proc printIdeal(Ideal I)
 "USAGE: printIdeal(I); I Ideal
 RETURN: print Ideal
 EXAMPLE: example printIdeal, shows an example"
 {
-def R=basering;
-def SS=I.in;
+def SS=I.r_value;
 setring SS;
 I.value;
-setring R;
+kill SS;
 }
 example
 {"EXAMPLE:";
@@ -75,11 +75,10 @@ I;
 
 static proc stringIdeal(Ideal I)
 {
-def R=basering;
-def S=I.in;
+def S=I.r_value;
 setring S;
 string st=string(I.value);
-setring R;
+kill S;
 return(st);
 }
 
@@ -87,11 +86,10 @@ return(st);
 
 static proc addIdeal(Ideal I,Ideal J)
 {
-def R=basering;
-def S1=I.in;
-setring S1;
+def S=I.r_value;
+setring S;
 Ideal IplusJ=I.value+J.value;
-setring R;
+kill S;
 return(IplusJ);
 }
 
@@ -99,11 +97,10 @@ return(IplusJ);
 
 static proc multIdeal(Ideal I,Ideal J)
 {
-def R=basering;
-def S1=I.in;
-setring S1;
+def S=I.r_value;
+setring S;
 Ideal ItimesJ=(I.value)*(J.value);
-setring R;
+kill S;
 return(ItimesJ);
 }
 
@@ -112,10 +109,9 @@ return(ItimesJ);
 
 static proc expIdeal(Ideal I,int n)
 {
-def R=basering;
-def S1=I.in;
-setring S1;
+def S=I.r_value;
+setring S;
 Ideal Iexpn=(I.value)^n;
-setring R;
+kill S;
 return(Iexpn);}
 
