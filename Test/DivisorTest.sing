@@ -1,0 +1,45 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+ring R=0,(x,y,z),dp;
+scheme X=makeProjScheme(0);
+scheme Y=makeProjScheme(ideal(x-z),X);
+divisor A=list(Y,2),X;
+Y=makeProjScheme(ideal(x2-zy),X);
+scheme Z=makeProjScheme(ideal(x2z-z2y+y3),X);
+divisor B=list(Y,1),list(Z,1),X;
+Y=makeProjScheme(ideal(y),X);
+divisor C=list(Y,1),X;
+IntersectionNumber(3*C-A,B);
+
+Y=makeProjScheme(ideal(x2z-zy2-y3),X);
+divisor D=list(Y,1),X;
+divisor E=C;
+Y=makeProjScheme(ideal(x+y),X);
+divisor F=list(Y,1),X;
+Y=makeProjScheme(ideal(x-y),X);
+divisor G=list(Y,1),X;
+IntersectionNumber(D,E+F+G);
+
+Z=makeProjScheme(ideal(x,y),X);
+list L=blowUp(X,Z);
+divisor Dt=strictTransform(D,L[2]);
+divisor Et=strictTransform(E,L[2]);
+divisor Ft=strictTransform(F,L[2]);
+divisor Gt=strictTransform(G,L[2]);
+IntersectionNumber(Dt,Et+Ft+Gt);
+
+Y=makeProjScheme(ideal((x+z)^2*z-zy2-y3-z3),X);
+D=list(Y,1),X;
+E=C;
+Y=makeProjScheme(ideal(x),X);
+F=list(Y,1),X;
+IntersectionNumber(D,E+F);
+
+Dt=strictTransform(D,L[2]);
+Et=strictTransform(E,L[2]);
+Ft=strictTransform(F,L[2]);
+IntersectionNumber(Dt,Et+Ft);

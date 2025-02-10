@@ -35,6 +35,11 @@ system("--no-out",1);
 <"VarietyTest.sing";
 
 system("--no-out",0);
+"starting DivisorTest.sing";
+system("--no-out",1);
+<"DivisorTest.sing";
+
+system("--no-out",0);
 "starting SmoothnessTest.sing";
 system("--no-out",1);
 <"SmoothnessTest.sing";

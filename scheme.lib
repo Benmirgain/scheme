@@ -59,7 +59,7 @@ ChartmapCompIdeal(phi,I); Computes the inverse image under phi of the closed sub
 ChartmapToMorphism(phi); converts a chartmap phi to a morphism
 ChartToScheme(U); converts chart U to a scheme
 CompleteIntersectionCover(X,W); Computes a scheme isomorphic to X, where each chart is a complete intersection
-dimension(X); computes the dimension of the scheme X
+SchemeDimension(X); computes the dimension of the scheme X
 FibreProduct(X,Y); computes the fibre product of the scheme X with the scheme Y
 HybrSmoothTest(X); smoothness test for scheme X, only works for equidimensional X
 Image(phi,X); computes the image of a subscheme X under a morphism phi
@@ -203,7 +203,7 @@ EXAMPLE: example IntersectionNumber; shows an example"
 	if(typeof(#[1])!="divisor")
 	{   ERROR("Wrong inputs!");}
 	scheme X=#[1].space;
-	if(size(#)!=dimension(X))
+	if(size(#)!=SchemeDimension(X))
 	{   ERROR("Wrong number of inputs!");}
 	for(k=1; k<=size(#); k=k+1)
 	{
@@ -235,7 +235,7 @@ EXAMPLE: example IntersectionNumber; shows an example"
 	        j=iv[k];
 			Z=intersection(Z,#[k].schemes[j]);
 		}
-		if(dimension(Z)!=0)
+		if(SchemeDimension(Z)!=0)
 		{   ERROR("Divisors not in general position!");}
 		for(l=1;l<=size(X.cover);l=l+1)
 	    {
@@ -1604,7 +1604,7 @@ S;
 //  Schemes Miscelanious
 //////////////////////////////////////////////////////////////////////////////////////////
 
-proc dimension(scheme X)
+proc SchemeDimension(scheme X)
 "USAGE: dimension(X); X scheme
 RETURN: The dimension of the scheme X
 EXAMPLE: example dimension; shows an example"
@@ -1625,16 +1625,16 @@ example
 {"EXAMPLE:";
 ring R=0,(x,y,z),dp;
 scheme X=makeAffineScheme(x-yz);
-dimension(X);
+SchemeDimension(X);
 
 X=makeProjScheme(x);
-dimension(X);
+SchemeDimension(X);
 
 X=makeProjScheme(ideal(x,y));
-dimension(X);
+SchemeDimension(X);
 
 X=makeProjScheme(ideal(x,y,z));
-dimension(X);
+SchemeDimension(X);
 }
 
 
@@ -4114,24 +4114,18 @@ EXAMPLE: example blowUp;  shows an example
    list eD=list();
 	
    pi.base=X;
-   for(int i=1; i<=size(C.cover); i=i+1)
-   {
-       def S=C.cover[i].in;
-	   setring S;
-	   C.cover[i].value=std(C.cover[i].value);
-	   kill S;
-   }
    pi.center=C;
    
    // Computation of the Charts of the blow up
 
    int n=size(X.cover);
+   int i;
    for(i=1; i<=n; i=i+1)
    {
       def R=X.cover[i].in;
 	  setring R;
 	  int m=nvars(R);
-	  C.cover[i].value=simplify(C.cover[i].value,2);
+	  C.cover[i].value=interred(C.cover[i].value);
 	  int l=size(C.cover[i].value);
 	  ideal A=C.cover[i].value;
 	  ideal Base=X.cover[i].value;
@@ -4167,15 +4161,9 @@ EXAMPLE: example blowUp;  shows an example
 		 
 		 
 		 setring S;
-		 ideal I=0;
-		 ideal J=0;
-		 for(k=1; k<=m; k=k+1)
-		 {
-		    I=I+ideal(var(k));
-		 }
-		 map f=R,I;
-		 J=f(A);
-		 I=f(Base);
+		 ideal I,J;
+		 J=fetch(R,A);
+		 I=fetch(R,Base);
 		 for(k=1; k<=l; k=k+1)
 		 {
 		    if(k!=j)
@@ -4433,6 +4421,7 @@ EXAMPLE: example blowUp;  shows an example
 
 		 B.cover[i]=U;
 		 eD[i]=Ue;
+		 pi.maps[i][1]=pi.maps[i][1]*phi;
 		 for(j=1; j<=size(B.cover); j=j+1)
 		 {
 			B.maps[i][j]=B.maps[i][j]*phi;
@@ -4501,7 +4490,7 @@ proc itblowUp(def X, def C)
     	def R=X.cover[i].entry.in;
 		setring R;
 		int m=nvars(R);
-		C.cover[i].entry.value=std(C.cover[i].entry.value);
+		C.cover[i].entry.value=interred(C.cover[i].entry.value);
 		int l=size(C.cover[i].entry.value);
 		ideal A=C.cover[i].entry.value;
 		ideal Base=X.cover[i].entry.value;
@@ -4835,7 +4824,6 @@ EXAMPLE: example strictTransform, shows an example"
 {
    if(typeof(Y)=="scheme")
    {
-      def B=basering;
       scheme result;
 	  result.maps=pi.blow.maps;
       int n=size(pi.blow.cover);
@@ -4846,17 +4834,12 @@ EXAMPLE: example strictTransform, shows an example"
 	     def S=pi.blow.cover[k].in;
 		 
 		 setring R;
-		 ideal base=Y.cover[m].value;
+		 Ideal base=Y.cover[m].value;
 		 int nx=nvars(R);
 		 
 		 setring S;
-		 ideal I=var(1);
-		 for(int i=2; i<=nx; i=i+1)
-		 {
-		    I=I,ideal(var(i));
-		 }
-		 map phi=R,I;
-		 ideal J=phi(base);
+		 chartmap phi=pi.maps[k][1];
+		 ideal J=ChartmapCompIdeal(phi,base).value;
 		 J=J+pi.blow.cover[k].value;
 		 
 		 ideal E=pi.exDiv.cover[k].value;
@@ -4865,7 +4848,7 @@ EXAMPLE: example strictTransform, shows an example"
 		 chart U=J;
 		 result.cover=result.cover+list(U);
 		 
-		 kill S,i,I,E,nx,U,J,phi,m;
+		 kill S,E,nx,U,J,phi,m;
 		 setring R;
 		 kill base;
 		 kill R;
@@ -4881,8 +4864,19 @@ EXAMPLE: example strictTransform, shows an example"
 		 kill j;
 	  }
 	  
-	  setring B;
 	  return(result);
+   }
+
+   if(typeof(Y)=="divisor")
+   {
+		divisor result=Y;
+		result.space=pi.blow;
+		for(int i=1; i<=size(Y.schemes); i=i+1)
+		{
+			result.schemes[i]=strictTransform(Y.schemes[i],pi);
+		}
+		kill i;
+		return(result);
    }
 }
 example
