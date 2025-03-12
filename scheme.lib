@@ -469,8 +469,13 @@ static proc printChart(chart C)
 {
    def S=C.r_value;
    setring S;
+   if(C.value!=1)
+   {
    "ring = "+string(S);
    "quotient = "+string(C.value);
+   }else{
+	"Empty Set"
+   }
 }
 
 // Print routine for chartmap
@@ -638,18 +643,36 @@ static proc notequalScheme(scheme X, scheme Y)
 static proc printScheme(scheme X)
 {
    int i,j,k,m,l;
+   intvec isEmpty=0:size(X.cover);
+   intvec index=0:size(X.cover);
+   int counter=1;
    for(i=1; i<=size(X.cover); i=i+1)
    {
-      "Chart U"+string(i)+":";
-      X.cover[i];
+	  def S=X.cover[i].r_value;
+	  setring S;
+	  if(X.cover[i].value!=1)
+	  {
+		index[i]=counter;
+		counter=counter+1;
+	     "Chart "+string(index[i])+":";
+         X.cover[i];
+	  }else{
+		isEmpty[i]=1;
+	  }
+	  kill S;
    }
+   kill counter;
    "";
    chartmap phi;
    for(i=1; i<=size(X.cover); i=i+1)
    {
+	  if(isEmpty[i]==0)
+	  {
       for(j=1; j<=size(X.cover); j=j+1)
 	  {
-	     "Map U"+string(i)+" -> U"+string(j)+":";
+		 if(isEmpty[j]==0)
+		 {
+	     "Map Chart "+string(index[i])+" -> Chart "+string(index[j])+":";
 		 
 	     phi=X.maps[i][j];
          def T=phi.preim.in;
@@ -676,8 +699,11 @@ static proc printScheme(scheme X)
          }
 		 kill st;
 		 kill T,S;
+		 }
+	  }
 	  }
    }
+   kill phi,i,j,k,l,m,isEmpty,index;
 }
 
 
@@ -1139,10 +1165,12 @@ EXAMPLE: example makeProjScheme; shows an example"
 	chart U;
 	for(i=1;i<=n;i=i+1)
 	{
+		setring R;
 	   list rl=ringlist(R);
 	   rl[2]=delete(rl[2],i);
 	   rl[3]=list(list("dp",1:(n-1)),list("C",0));
 	   S=ring(rl);
+	   kill rl;
 	   
 	   setring S;
 	   ideal J=0;
@@ -1928,8 +1956,8 @@ F==H;
 // Print routine for ratFunc
 static proc printratFunc(ratFunc r)
 {
-   def SS=r.in;
-   setring SS;
+   def S=r.in;
+   setring S;
    if(r.den==1)
    {
       string(r.num);   
@@ -1942,8 +1970,8 @@ static proc printratFunc(ratFunc r)
 // Gives ratFunc as a string
 static proc stringratFunc(ratFunc r)
 {
-   def SS=r.in;
-   setring SS;
+   def S=r.in;
+   setring S;
    if(r.den==1)
    {
       string st=string(r.num);   
@@ -2244,7 +2272,6 @@ proc ChartmapCompChartmap(chartmap phi, chartmap psi)
    if(phi.preim.in!=psi.im.in)
    {   ERROR("Chartmaps not compatible");}
    
-   def R=basering;
    def S=psi.preim.in;
    def SS=phi.preim.in;
    list Maps;
@@ -2272,7 +2299,6 @@ proc ChartmapCompChartmap(chartmap phi, chartmap psi)
    
    chartmap result=psi.preim,phi.im,Dom,Maps;
    kill Dom;
-   setring R;   
    return(result);
 }
 example
@@ -2309,7 +2335,6 @@ RETURN: Ideal J that, if no additional input given, represents the image of phi,
         otherwise it represents the image of V(I) under phi
 EXAMPLE: example chartmapImage; gives an example"
 {
-   def Base=basering;
    def R=phi.preim.in;
    def S=phi.im.in;
    Ideal result;
@@ -2418,7 +2443,6 @@ EXAMPLE: example chartmapImage; gives an example"
    setring R;
    kill A;
    
-   setring Base;
    return(result);
 }
 
@@ -2438,7 +2462,6 @@ RETURN: morphism psi from Preim to Im such that psi.chartmaps[Maps[k][2]][Maps[k
 EXAMPLE: example makeMorphism; gives an example"
 {
    morphism result;
-   def R=basering;
    
    result.preim=Preim;
    result.im=Im;
@@ -2470,8 +2493,7 @@ EXAMPLE: example makeMorphism; gives an example"
 	  j=Maps[k][3];
       result.chartmaps[i][j]=Maps[k][1];
    }
-   
-   setring R;
+
    return(result);
 }
 example
@@ -2547,7 +2569,6 @@ EXAMPLE: example MorphismCompMorphism; gives an example"
       ERROR("Inputs not compatible");
    }
    
-   def R=basering;
    morphism result;
    
    result.preim=psi.preim;
@@ -2625,7 +2646,6 @@ EXAMPLE: example MorphismCompMorphism; gives an example"
       } 
    }
    
-   setring R;
    return(result);
 }
 example
@@ -2754,7 +2774,6 @@ proc isSameMap(def phi, def psi)
 	{
 		return(0);
 	}
-	def B=basering;
 	def R=phi.preim.in;
 	setring R;
 	poly p;
@@ -2763,11 +2782,9 @@ proc isSameMap(def phi, def psi)
 		p=phi.ratFuncs[i].num*psi.ratFuncs[i].den-psi.ratFuncs[i].num*phi.ratFuncs[i].den;
 		if(reduce(p,std(phi.preim.value))!=0)
 		{
-			setring B;
 			return(0);
 		}
 	}
-	setring B;
 	return(1);
 	}
 
@@ -2777,7 +2794,6 @@ proc isSameMap(def phi, def psi)
 	{
 		return(0);
 	}
-	def B=basering;
 	def R=phi.preim.in;
 	setring R;
 	int n=size(phi.ratFuncs);
@@ -2790,10 +2806,8 @@ proc isSameMap(def phi, def psi)
 	ideal I=minor(M,2);
 	if(size(reduce(I,std(phi.preim.value)))!=0)
 	{
-		setring B;
 		return(0);
 	}
-	setring B;
 	return(1);
 	}
 }
@@ -2828,7 +2842,6 @@ proc affRatMapCompaffRatMap(affRatMap phi, affRatMap psi)
 
 proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
 {
-	def B=basering;
 	def R=psi.preim.in;
 	def S=psi.im.in;
 	projRatMap result;
@@ -2862,7 +2875,6 @@ proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
 		result.ratFuncs[i]=P;
 	}
 
-	setring B;
 	return(result);
 }
 
@@ -2993,7 +3005,6 @@ EXAMPLE: example InvImage; gives an example"
 {
    if((typeof(X)=="scheme")&&(typeof(phi)=="morphism"))
    {
-   def R=basering;
    scheme result;
    
    int i,j;
@@ -3037,13 +3048,11 @@ EXAMPLE: example InvImage; gives an example"
       }
    }
    
-   setring R;
    return(result);
    }
 
    if((typeof(X)=="affVariety")&&(typeof(phi)=="affRatMap"))
    {
-	def B=basering;
 	def R=phi.preim.in;
 	def S=phi.im.in;
 
@@ -3073,7 +3082,6 @@ EXAMPLE: example InvImage; gives an example"
 
    if((typeof(X)=="projVariety")&&(typeof(phi)=="projRatMap"))
    {
-	def B=basering;
 	def R=phi.preim.in;
 	def S=phi.im.in;
 	int i;
@@ -3168,7 +3176,6 @@ proc Graph(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-		def B=basering;
 		product result=makeProduct(phi.preim,phi.im);
 		def S=phi.preim.in;
 		int n=nvars(S);
@@ -3200,13 +3207,11 @@ proc Graph(def phi)
 
 		kill I;
 		kill n,i,S,R;
-		setring B;
 		return(result);
 	}
 
 	if(typeof(phi)=="projRatMap")
 	{
-		def B=basering;
 		product result=makeProduct(phi.preim,phi.im);
 		def S=phi.preim.in;
 		int n=nvars(S);
@@ -3241,7 +3246,6 @@ proc Graph(def phi)
 
 		kill I;
 		kill n,i,j,S,R;
-		setring B;
 		return(result);
 	}
 }
@@ -3256,7 +3260,6 @@ EXAMPLE: example Image; gives an example"
 {
    if(typeof(phi)=="morphism")
    {
-   def B=basering;
    scheme result;
    int i,j;
    
@@ -3312,13 +3315,11 @@ EXAMPLE: example Image; gives an example"
    }}
    
    result.maps=phi.im.maps;
-   setring B;
    return(result);
    
    }else{
    if(typeof(phi)=="affRatMap")
    {
-	  def Base=basering;
       def R=phi.preim.in;
       def S=phi.im.in;
       affVariety result;
@@ -3413,13 +3414,11 @@ EXAMPLE: example Image; gives an example"
       setring R;
       kill A;
    
-      setring Base;
       return(result);
 
    }else{
    if(typeof(phi)=="projRatMap")
    {
-      def Base=basering;
       def R=phi.preim.in;
       def S=phi.im.in;
       projVariety result;
@@ -3509,7 +3508,6 @@ EXAMPLE: example Image; gives an example"
       setring R;
       kill A;
    
-      setring Base;
       return(result);
    }}}
 }
@@ -3614,7 +3612,6 @@ proc Inverse(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-	  def Base=basering;
       def R=phi.preim.in;
       def S=phi.im.in;
       affRatMap result;
@@ -3737,13 +3734,11 @@ proc Inverse(def phi)
       setring R;
       kill A;
    
-      setring Base;
       return(result);
 	}
 
 	if(typeof(phi)=="projRatMap")
 	{
-	  def Base=basering;
       def R=phi.preim.in;
       def S=phi.im.in;
       projRatMap result;
@@ -3913,13 +3908,11 @@ proc Inverse(def phi)
       setring R;
       kill A;
    
-      setring Base;
       return(result);
 	}
 
 	if(typeof(phi)=="chartmap")
 	{
-	def Base=basering;
     def R=phi.preim.in;
     def S=phi.im.in;
     chartmap result;
@@ -4064,7 +4057,6 @@ proc Inverse(def phi)
     setring R;
     kill A,D;
    
-    setring Base;
     return(result);
 	}
 
@@ -5474,7 +5466,6 @@ if((size(#)==2)&&(typeof(#[1])=="ideal")&&(typeof(#[2])=="ideal"))
 
 if((size(#)==2)&&(typeof(#[1])=="scheme")&&(typeof(#[2])=="scheme"))
 {
-   def R=basering;
    scheme X=#[1];
    scheme W=#[2];
    scheme resultScheme;
@@ -5495,7 +5486,6 @@ if((size(#)==2)&&(typeof(#[1])=="scheme")&&(typeof(#[2])=="scheme"))
 	  CoverInvMaps[i]=LL[3];
 	  
 	  kill IX,IW;
-	  setring R;
 	  kill S,LL;
    }
 
@@ -5533,7 +5523,6 @@ if((size(#)==2)&&(typeof(#[1])=="scheme")&&(typeof(#[2])=="scheme"))
 			}
 			Maps=Maps+list(phi);
 			kill phi,S,SS;
-			setring R;
 		 }else{
 		    Maps=Maps+list(CoverMaps[i].chartmaps[1][k]);
 		 }
@@ -5566,7 +5555,6 @@ if((size(#)==2)&&(typeof(#[1])=="scheme")&&(typeof(#[2])=="scheme"))
 			}
 			Maps=Maps+list(phi);
 			kill phi,S,SS;
-			setring R;
 		 }else{
 		    Maps=Maps+list(CoverInvMaps[i].chartmaps[k][1]);
 		 }
@@ -5617,7 +5605,6 @@ EXAMPLE: example HybrSmoothTest; shows an example"
 if((size(#)==2)&&(typeof(#[1])=="chart")&&(typeof(#[2])=="chart"))
 {
    int result=1;
-   def T=basering;
    if(#[1].in!=#[2].in)
    {   ERROR("Incompatible Inputs");}
    def R=#[1].in;
@@ -5637,7 +5624,6 @@ if((size(#)==2)&&(typeof(#[1])=="chart")&&(typeof(#[2])=="chart"))
 	  {   result=1;}
 	  else
 	  {   result=0;}
-	  setring T;
 	  return(result);
    }
    else
@@ -5777,14 +5763,12 @@ if((size(#)==2)&&(typeof(#[1])=="chart")&&(typeof(#[2])=="chart"))
 		 kill h;
 	   }
 	   
-	   setring T;
        return(result);
 	}
 }
 
 if((size(#)==1)&&(typeof(#[1])=="scheme"))
 {
-   def R=basering;
    int result=1;
    scheme X=#[1];
    for(int n=1; n<=size(X.cover); n=n+1)
@@ -5792,7 +5776,6 @@ if((size(#)==1)&&(typeof(#[1])=="scheme"))
       def S=X.cover[n].in;
 	  setring S;
 	  chart W=0;
-	  setring R;
 	  kill S;
       if(!HybrSmoothTest(X.cover[n],W))
 	  {   result=0;}
@@ -5840,8 +5823,7 @@ proc isSmooth(scheme X)
 "USAGE: isSmooth(X); scheme X
 RETURN: 1 if X is smooth, 0 otherwise
 EXAMPLE: example isSmooth; gives an example"
-{
-   def R=basering;   
+{   
    int i,j,k;
    
    if(!isReduced(X))
@@ -5864,7 +5846,6 @@ EXAMPLE: example isSmooth; gives an example"
 	  kill S;
    }
    
-   setring R;
    for(j=1; j<=size(Dec); j=j+1)
    {
       if(!HybrSmoothTest(Dec[j][1]))
@@ -5873,7 +5854,6 @@ EXAMPLE: example isSmooth; gives an example"
 	  }
    }
    
-   setring R;
    return(1);
 }
 example
@@ -5907,9 +5887,7 @@ proc maps(int n, int m, iterativeScheme X)
 RETURN: the gluing map from the i-th to the j-th chart
 EXAMPLE: example maps; gives an example"
 {
-   	def R=basering;
-   
-   	chartmap result,phi,psi;
+	chartmap result,phi,psi;
    	intvec v=X.cover[n].label;
    	intvec w=X.cover[m].label;
 	int sv=size(v);
@@ -5928,7 +5906,6 @@ EXAMPLE: example maps; gives an example"
 		kill F;
 	}
 	kill S,i;
-	setring R;
 
 	psi.preim=X.cover[m].entry;
 	psi.im=X.cover[m].entry;
@@ -5943,7 +5920,6 @@ EXAMPLE: example maps; gives an example"
 		kill F;
 	}
 	kill S,i;
-	setring R;
 
 	int k=0;
 	int done=0;
@@ -6022,7 +5998,6 @@ EXAMPLE: example maps; gives an example"
 	kill i,k,S;
 
 	return(result);
-   	setring R;
 }
 example
 {"EXAMPLE:";
@@ -6045,8 +6020,6 @@ ASSUME: X is a subscheme of W, X and W are equidimensional and smooth and the ch
 RETURN: iterativeScheme Z that is isomorphic to X but whose charts are complete intersections
 EXAMPLE: example itCompleteIntersectionCover; gives an example"
 {
-   def R=basering;
-   
    iterativeScheme XX;
    if(typeof(X)=="scheme")
    {
@@ -6279,7 +6252,6 @@ EXAMPLE: example itCompleteIntersectionCover; gives an example"
 	  kill i,C,v,phi,psi;
    }
    
-   setring R;
    return(result);
 }
 example
