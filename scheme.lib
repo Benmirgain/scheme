@@ -67,6 +67,7 @@ intersection(X,Y); computes the scheme theoretic intersection of the schemes X a
 IntersectionNumber(D1,...); computes the intersection of the divisors D1,...
 InvImage(Y,phi); computes the inverse image of the scheme Y under the morphism phi
 IrredDec(X); computes the scheme theoretical irreducible decomposition of the scheme X
+isEmpty(C); checks whether given chart is the empty set
 isReduced(X); checks whether given scheme is reduced
 isSmooth(X); checks whether given scheme is smooth
 itCompleteIntersctionCover(X,W); iterative version of CompleteIntersectionCover
@@ -301,6 +302,32 @@ example
 ring R=0,(x,y,z),dp;
 chart U=ideal(x2-yz);
 U;
+}
+
+proc isEmpty(chart C)
+"USAGE: isEmpty(C); chart C
+RETURN: 1 if chart is the empty set, otherwise 0
+EXAMPLE: example isEmpty; shows an example"
+{
+	def R=C.r_value;
+	setring R;
+	ideal I=std(C.value);
+	if(I==1)
+	{
+		kill I;
+		kill R;
+		return(1);
+	}else{
+		kill I;
+		kill R;
+		return(0);
+	}
+}
+example
+{"EXAMPLE:";
+ring R=0,(x,y,z),dp;
+chart U=ideal(x+y+1,x+y+z,z);
+isEmpty(U);
 }
 
 // For comparing charts
@@ -643,7 +670,7 @@ static proc notequalScheme(scheme X, scheme Y)
 static proc printScheme(scheme X)
 {
    int i,j,k,m,l;
-   intvec isEmpty=0:size(X.cover);
+   intvec Empty=0:size(X.cover);
    intvec index=0:size(X.cover);
    int counter=1;
    for(i=1; i<=size(X.cover); i=i+1)
@@ -657,7 +684,7 @@ static proc printScheme(scheme X)
 	     "Chart "+string(index[i])+":";
          X.cover[i];
 	  }else{
-		isEmpty[i]=1;
+		Empty[i]=1;
 	  }
 	  kill S;
    }
@@ -666,11 +693,11 @@ static proc printScheme(scheme X)
    chartmap phi;
    for(i=1; i<=size(X.cover); i=i+1)
    {
-	  if(isEmpty[i]==0)
+	  if(Empty[i]==0)
 	  {
       for(j=1; j<=size(X.cover); j=j+1)
 	  {
-		 if(isEmpty[j]==0)
+		 if(Empty[j]==0)
 		 {
 	     "Map Chart "+string(index[i])+" -> Chart "+string(index[j])+":";
 		 
@@ -703,7 +730,7 @@ static proc printScheme(scheme X)
 	  }
 	  }
    }
-   kill phi,i,j,k,l,m,isEmpty,index;
+   kill phi,i,j,k,l,m,Empty,index;
 }
 
 
@@ -1309,6 +1336,162 @@ example
    scheme Y=makeProjScheme(ideal(x2z-y3-y2z),X);
    Y;
 }
+
+
+
+static proc orderedSubsequence(int n, int k)
+{
+	list result;
+	if((n<k)||(k<=0)||(n<=0))
+	{
+		return(list());
+	}
+	if((n==k)&&(n>0))
+	{
+		intvec iv=1..n;
+		return(list(iv));
+		kill iv;
+	}
+	if((n>k)&&(k>0))
+	{
+		int i;
+		list L=orderedSubsequence(n-1,k);
+		list K=orderedSubsequence(n-1,k-1);
+		if(k>1)
+		{
+		for(i=1; i<=size(K); i=i+1)
+		{
+			K[i]=K[i],n;
+		}
+		}else{
+			intvec iv=n;
+			K=list(iv);
+			kill iv;
+		}
+		kill i;
+		return(L+K);
+		kill L,K;
+	}
+}
+
+
+proc Grassmannian(int n, int k)
+"USAGE: Grassmannian(n,k); int n,k
+RETURN: Grassmannian G(n,k) embedded in P^((n choose k)-1) via the Plücker Relations
+EXAMPLE: example Grassmanian; shows an example"
+{
+	if((n<=k)||(n<=0)||(k<=0))
+	{   ERROR("Bad Inputs!!!")}
+
+	int i,j,l;
+	list L=orderedSubsequence(n,k);
+	list K;
+	string s="ring R=0,(";
+	for(i=1; i<=size(L); i=i+1)
+	{
+		s=s+"w("+string(L[i])+")";
+		if(i<size(L))
+		{
+			s=s+",";
+		}else{
+			s=s+"),";
+		}
+	}
+	s=s+"dp;";
+	execute(s);
+	ideal I;
+
+	L=orderedSubsequence(n,k-1);
+	K=orderedSubsequence(n,k+1);
+	for(i=1; i<=size(L); i=i+1)
+	{
+		for(j=1; j<=size(K); j=j+1)
+		{
+			intvec iv,iw;
+			poly f=0;
+			for(l=1; l<=size(K[j]); l=l+1)
+			{
+				iw=K[j];	
+				int e=0;
+				int done=0;
+				int stop=0;
+				iv=L[i];
+				while((e<=size(L[i]))&&(!done))
+				{
+					if(e==size(L[i]))
+					{
+						if(iw[l]==iv[1])
+						{
+							done=1;
+							stop=1;
+						}else{
+							done=1;
+							iv=iw[l],iv;
+						}
+					}else{
+					if((iw[l]>=iv[size(L[i])-e]))
+					{
+						if(iw[l]==iv[size(L[i])-e])
+						{
+							done=1;
+							stop=1;
+						}else{
+							done=1;
+							if(e==0)
+							{
+								iv=L[i],iw[l];
+							}else{
+								iv=iv[1..(size(L[i])-e)],iw[l],iv[(size(L[i])-e+1)..size(L[i])];
+							}
+						}
+					}
+					}
+					if(!done)
+					{  e=e+1;}
+				}
+
+				if(l==1)
+				{
+					iw=iw[2..size(K[j])];
+				}
+				if(l==size(K[j]))
+				{
+					iw=iw[1..(l-1)];
+				}
+				if((l>1)&&(l<size(K[j])))
+				{
+					intvec it=1..(l-1),(l+1)..size(K[j]);
+					iw=iw[it];
+					kill it;
+				}
+
+				if(!stop)
+				{
+					s="f=f+(-1)^(l+e)*w("+string(iv)+")*w("+string(iw)+");";
+					execute(s);
+				}
+				kill e,done,stop;
+			}
+			I=I,f;
+			kill iv,iw,f;
+		}
+	}
+	I=simplify(I,3);
+	I=simplify(I,6);
+
+	kill L,K,s,i,j,k;
+
+	scheme G=makeProjScheme(I);
+	kill I;
+	kill R;
+	return(G);
+}
+example
+{
+   "EXAMPLE:"; echo=2;
+   scheme X=Grassmannian(5,2);
+}
+
 
 
 
@@ -2269,7 +2452,7 @@ J;
 
 proc ChartmapCompChartmap(chartmap phi, chartmap psi)
 {
-   if(phi.preim.in!=psi.im.in)
+   if(nvars(phi.preim.in)!=nvars(psi.im.in))      //to do: better compatability test
    {   ERROR("Chartmaps not compatible");}
    
    def S=psi.preim.in;
