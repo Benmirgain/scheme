@@ -1375,7 +1375,7 @@ static proc orderedSubsequence(int n, int k)
 }
 
 
-proc Grassmannian(int n, int k)
+proc Grassmannian(int n, int k, list #)
 "USAGE: Grassmannian(n,k); int n,k
 RETURN: Grassmannian G(n,k) embedded in P^((n choose k)-1) via the Plücker Relations
 EXAMPLE: example Grassmanian; shows an example"
@@ -1479,11 +1479,89 @@ EXAMPLE: example Grassmanian; shows an example"
 	I=simplify(I,3);
 	I=simplify(I,6);
 
-	kill L,K,s,i,j,k;
-
 	scheme G=makeProjScheme(I);
-	kill I;
-	kill R;
+	kill I; kill R;
+
+	if(size(#)==1)
+	{
+	if(typeof(#[1])=="int")
+	{
+	if(#[1])
+	{
+		for(i=1; i<=size(G.cover); i=i+1)
+		{
+			def S=G.cover[i].in;
+			setring S;
+			ideal I=G.cover[i].value;
+			s="ideal V="+varstr(S)+";";
+			execute(s);
+			ideal Ijet=jet(I,1);
+			ideal J=V;
+			for(j=1; j<=ncols(Ijet); j=j+1)
+			{
+				if(deg(Ijet[j])==1)
+				{
+					l=rvar(leadmonom(Ijet[j]));
+					number c=leadcoef(Ijet[j]);
+					if((Ijet[j]-c*var(l))==0)
+					{
+						J[l]=1/c*(Ijet[j]-I[j]);
+					}
+					kill c;
+				}
+			}
+
+			for(j=1; j<=nvars(S); j=j+1)
+			{
+				I=subst(I,var(j),J[j]);
+			}
+			I=simplify(I,2);
+
+			chartmap phi,psi;
+			phi.preim=G.cover[i];
+			phi.dom=ideal(1);
+			psi.im=G.cover[i];
+
+			def Snew=tolessvars(J);
+			setring Snew;
+			G.cover[i]=makeChart(imap(S,I));
+			phi.im=G.cover[i];
+			psi.preim=G.cover[i];
+			psi.dom=ideal(1);
+			ideal J=imap(S,J);
+			psi.ratFuncs[1]=list();
+			for(j=1; j<=nvars(S); j=j+1)
+			{
+				psi.ratFuncs[1][j]=makeratFunc(J[j]);
+			}
+			kill J;
+
+			s="ideal V="+varstr(Snew)+";";
+			execute(s);
+			setring S;
+			V=imap(Snew,V);
+			phi.ratFuncs[1]=list();
+			for(j=1; j<=nvars(Snew); j=j+1)
+			{
+				phi.ratFuncs[1][j]=makeratFunc(V[j]);
+			}
+
+			for(j=1; j<=size(G.cover); j=j+1)
+			{
+				G.maps[i][j]=G.maps[i][j]*psi;
+				G.maps[j][i]=phi*G.maps[j][i];
+			}
+			
+			setring S;
+			kill I,V,J,Ijet;
+			setring Snew;
+			kill V;
+			kill S,phi,psi,Snew;
+		}
+	}
+	}	
+	}
+	kill L,K,s,i,j,l;
 	return(G);
 }
 example
