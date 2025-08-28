@@ -1,0 +1,310 @@
+
+LIB "scheme.lib";
+
+int i,j,k,l,n,m,e,h;
+int doElimination=1;
+int doCurveElimination=0;
+ring R=(0,a),(z(1)(2..5),z(2)(3..5),z(3)(4..5),z(4)(5)),dp;
+minpoly=rootofUnity(3);
+
+ideal I=0;
+for(i=1;i<=2;i=i+1)
+{
+   for(j=i+1;j<=3;j=j+1)
+   {
+      for(k=j+1;k<=4;k=k+1)
+      {
+         for(l=k+1;l<=5; l=l+1)
+         {
+            I=I+ideal(z(i)(j)*z(k)(l)-z(i)(k)*z(j)(l)+z(i)(l)*z(j)(k));
+         }
+      }
+   }
+}
+
+scheme Fano=makeProjScheme(I);
+if(doElimination)
+{
+   list Maps;
+}
+
+ring S=0,(x(1..5)),dp;
+poly f=x(1)^3+x(2)^3+x(3)^3+x(4)^3+x(5)^3;
+
+def RS=ringtensor(R,S);
+
+for(n=1; n<=nvars(R); n=n+1)
+{
+string s=varstr(R,n);
+execute("i="+s[3]+";");
+execute("j="+s[6]+";");
+kill s;
+
+setring RS;
+poly g=imap(S,f);
+for(k=1; k<=5; k=k+1)
+{
+   if(k<i)
+   {
+      g=subst(g,x(k),x(i)*z(k)(j)-x(j)*z(k)(i));
+   }
+   if(k==i)
+   {
+      g=subst(g,x(k),x(k)*z(i)(j));
+   }
+   if((k>i)&&(k<j))
+   {
+      g=subst(g,x(k),x(i)*z(k)(j)+x(j)*z(i)(k));
+   }
+   if(k==j)
+   {
+      g=subst(g,x(k),x(k)*z(i)(j));
+   }
+   if(k>j)
+   {
+      g=subst(g,x(k),-x(i)*z(j)(k)+x(j)*z(i)(k));
+   }
+}
+
+g=subst(g,z(i)(j),1);
+matrix M=coef(g,x(i)*x(j));
+ideal J=M[2,1..ncols(M)];
+
+def T=Fano.cover[n].in;
+setring T;
+ideal J=imap(RS,J);
+Fano.cover[n].value=Fano.cover[n].value+J;
+J=Fano.cover[n].value;
+
+for(k=1; k<=nvars(R); k=k+1)
+{
+   Fano.maps[k][n].im=Fano.cover[n];
+   Fano.maps[n][k].preim=Fano.cover[n];
+}
+
+if(doElimination)
+{
+   list eliml=elimpart(J);
+
+   ideal Jelim=eliml[1];
+   ideal Jelimfive=eliml[5];
+
+   printlevel=-1;
+   def Tnew=tolessvars(eliml[4]);
+   printlevel=0;
+
+   setring Tnew;
+   chart U=imap(T,Jelim);
+
+   chartmap phi,psi;
+
+   phi.preim=Fano.cover[n];
+   phi.im=U;
+   setring T;
+   phi.dom=1;
+   phi.ratFuncs[1]=list();
+   for(k=1; k<=nvars(T); k=k+1)
+   {
+      if(eliml[4][k]!=0)
+      {
+      phi.ratFuncs[1]=phi.ratFuncs[1]+list(makeratFunc(eliml[4][k]));
+      }
+   }
+
+   psi.preim=U;
+   psi.im=Fano.cover[n];
+   setring Tnew;
+   ideal Jelimfive=imap(T,Jelimfive);
+   psi.dom=1;
+   psi.ratFuncs[1]=list();
+   for(k=1; k<=nvars(T); k=k+1)
+   {
+      psi.ratFuncs[1][k]=makeratFunc(Jelimfive[k]);
+   }
+   kill Jelimfive;
+
+   Maps[n]=list(phi,psi);
+
+   for(k=1; k<=nvars(R); k=k+1)
+   {
+      Fano.maps[k][n]=phi*Fano.maps[k][n];
+      Fano.maps[n][k]=Fano.maps[n][k]*psi;
+   }
+
+   Fano.cover[n]=U;
+
+   kill U,Tnew,phi,psi;
+   setring T;
+   kill Jelimfive,Jelim,eliml;
+}
+
+kill T;
+
+setring RS;
+kill J,M,g;
+}
+
+setring R;
+list Divisors;
+for(n=1; n<=nvars(R); n=n+1)
+{
+string s=varstr(R,n);
+execute("i="+s[3]+";");
+execute("j="+s[6]+";");
+kill s;
+
+for(e=0; e<=2; e=e+1)
+{
+number b=a^e;
+
+ideal C,Cred;
+for(k=1;k<=5;k=k+1)
+{
+   if((k!=i)&&(k!=j))
+   {
+   for(l=k+1;l<=5;l=l+1)
+   {
+      if((l!=i)&&(l!=j))
+      {
+         C=C+ideal(z(k)(l));
+      }
+   }
+   }
+}
+
+for(k=1;k<=5;k=k+1)
+{
+   if((k<i)&&(k<j))
+   {
+      C=C+ideal(z(k)(j)+b*z(k)(i));
+   }
+   if((k>i)&&(k<j))
+   {
+      C=C+ideal(z(k)(j)-b*z(i)(k));
+   }
+   if((k>i)&&(k>j))
+   {
+      C=C+ideal(z(j)(k)+b*z(i)(k));
+   }
+}
+
+scheme X;
+X.maps=Fano.maps;
+
+if(doCurveElimination)
+{
+   list CurveMaps;
+}
+for(m=1; m<=nvars(R); m=m+1)
+{
+   Cred=subst(C,var(m),1);
+   if(doElimination)
+   {
+      chartmap psi=Maps[m][2];
+      def Rnew=psi.im.r_value;
+      setring Rnew;
+      ideal CC;
+   }else{
+      def Rnew=Fano.cover[m].r_value;
+      setring Rnew;
+      ideal CC=Fano.cover[m].value;
+   }
+   CC=CC+imap(R,Cred);
+   if(doElimination)
+   {
+      Ideal IC=ChartmapCompIdeal(psi,CC);
+      kill psi;
+      def Rnewnew=Fano.cover[m].r_value;
+      setring Rnewnew;
+      X.cover[m]=makeChart(interred(IC.value+Fano.cover[m].value));
+      kill IC;
+      setring Rnew;
+      kill CC;
+      kill Rnewnew;
+   }else{
+      X.cover[m]=makeChart(CC);
+      kill CC;
+   }
+    
+   for(k=1; k<=nvars(R); k=k+1)
+   {
+      X.maps[k][m].im=X.cover[m];
+      X.maps[m][k].preim=X.cover[m];
+   }
+
+   if(doCurveElimination && !isEmpty(X.cover[m]))
+   {
+      def T=X.cover[m].in;
+      setring T;
+      list eliml=elimpart(X.cover[m].value);
+
+      ideal Jelim=eliml[1];
+      ideal Jelimfive=eliml[5];
+
+      printlevel=-1;
+      def Tnew=tolessvars(eliml[4]);
+      printlevel=0;
+
+      setring Tnew;
+      chart U=imap(T,Jelim);
+
+      chartmap phi,psi;
+
+      phi.preim=X.cover[m];
+      phi.im=U;
+      setring T;
+      phi.dom=1;
+      phi.ratFuncs[1]=list();
+      for(k=1; k<=nvars(T); k=k+1)
+      {
+         if(eliml[4][k]!=0)
+         {
+         phi.ratFuncs[1]=phi.ratFuncs[1]+list(makeratFunc(eliml[4][k]));
+         }
+      }
+
+      psi.preim=U;
+      psi.im=X.cover[m];
+      setring Tnew;
+      ideal Jelimfive=imap(T,Jelimfive);
+      psi.dom=1;
+      psi.ratFuncs[1]=list();
+      for(k=1; k<=nvars(T); k=k+1)
+      {
+         psi.ratFuncs[1][k]=makeratFunc(Jelimfive[k]);
+      }
+      kill Jelimfive;
+
+      CurveMaps=CurveMaps+list(list(phi,psi,m));
+
+      X.cover[m]=U;
+
+      kill U,Tnew,phi,psi;
+      setring T;
+      kill Jelim,Jelimfive,eliml;
+      kill T;
+   }
+
+
+   kill Rnew;
+   setring R;
+}
+
+if(doCurveElimination)
+{
+for(k=1; k<=size(CurveMaps); k=k+1)
+{
+   for(l=1; l<=size(CurveMaps); l=l+1)
+   {
+      m=CurveMaps[k][3];
+      h=CurveMaps[l][3];
+      X.maps[m][h]=CurveMaps[l][1]*X.maps[m][h]*CurveMaps[k][2];
+   }
+}
+}
+
+Divisors=Divisors+list(list(X,list(i,j,b)));
+kill X,C,Cred,b;
+if(doCurveElimination)
+{ kill CurveMaps;}
+}}
