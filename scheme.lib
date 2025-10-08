@@ -1894,7 +1894,7 @@ S;
 //////////////////////////////////////////////////////////////////////////////////////////
 
 proc SchemeDimension(scheme X)
-"USAGE: dimension(X); X scheme
+"USAGE: SchemeDimension(X); X scheme
 RETURN: The dimension of the scheme X
 EXAMPLE: example dimension; shows an example"
 {
