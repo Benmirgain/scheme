@@ -6647,17 +6647,17 @@ proc fanDecomposition(intmat M, list #)
 			bigintmat T[1][nrows(S)];
 			if(containsInSupport(L[i],P))
 			{
-			cone D;
-			for(j=1; j<=nrows(S); j=j+1)
-			{
-				if(S[j,1]>0)
+				cone D;
+				for(j=1; j<=nrows(S); j=j+1)
 				{
-					T=I[j,1..nrows(S)];
-					D=Gfan::coneViaInequalities(T);
-					C=Gfan::convexIntersection(C,D);
+					if(S[j,1]>0)
+					{
+						T=I[j,1..nrows(S)];
+						D=Gfan::coneViaInequalities(T);
+						C=Gfan::convexIntersection(C,D);
+					}
 				}
-			}
-			kill D;
+				kill D;
 			}
 			kill I,S,T;
 		}
