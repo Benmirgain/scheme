@@ -6622,8 +6622,7 @@ static proc subsetUtil(intmat M, int d, intmat S, int i, int j, list L)
 
 
 proc fanDecomposition(intmat M, list #)
-{
-	
+{	
 	cone C=Gfan::coneViaPoints(M);
 	int i,j,k;
 	int d=Gfan::dimension(C);
@@ -6631,7 +6630,16 @@ proc fanDecomposition(intmat M, list #)
 	fan F=Gfan::emptyFan(Gfan::ambientDimension(C));
 	if(size(#)==1)
 	{
-		bigintmat P=bigintmat(#[1]);
+		if(typeof(#[1])=="intvec")
+		{
+			bigintmat P[1][size(#[1])];
+			for(i=1; i<=size(#[1]); i=i+1)
+			{
+				P[1,i]=#[1][i];
+			}
+		}else{
+			bigintmat P=bigintmat(#[1]);
+		}
 		for(i=1; i<=size(L); i=i+1)
 		{
 			bigintmat I=Gfan::inequalities(L[i]);

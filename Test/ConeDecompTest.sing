@@ -4,11 +4,36 @@ if(!defined(Scheme))
 }
 killall();
 
-int n_vec=4;
+system("--ticks-per-sec",1000);
+
+//intmat H[4][3]=1,0,0,0,1,0,0,0,1,1,1,1;
+int n_vec=6;
 int d=3;
 int b=20;
 intvec v=b:(n_vec*d);
 intmat H=random(b,n_vec,d)+intmat(v,n_vec,d);
 
 def F=fanDecomposition(H);
+
+//intvec P=1,0,3;
+intvec P=0:d;
+for(int i=1; i<=n_vec; i=i+1)
+{
+    v=random(0,b)*H[i,1..d];
+    P=P+v;
+}
+
+//timer=0;
+//int t=timer;
+
+def G=fanDecomposition(H,P);
+
+/*t=timer-t;
+
+string s = "It took " + string(t div 60000) + " min ";
+t=t%60000;
+s = s + string(t div 1000) + " sec ";
+t=t%1000;
+s = s + string(t) + " ms";
+s;*/
 
