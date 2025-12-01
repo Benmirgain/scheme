@@ -6584,40 +6584,56 @@ proc subcones(intmat M)
 	int d=Gfan::dimension(coneViaPoints(M));
 	intmat S[d][ncols(M)];
 	list L;
+	intvec iv=1..d;
+	int done=0;
+	int count=0;
 
-	L=subsetUtil(M,d,S,1,0,L);
-	kill S;
+	while(!done)
+	{
+		S=M[iv,1..ncols(M)];
+		cone C=Gfan::coneViaPoints(S);
+		if(Gfan::dimension(C)==d)
+		{
+			count=count+1;
+			L[count]=C;
+		}
+		kill C;
+
+		int i=1;
+		int donehere=0;
+		while((i<=size(iv)) && (!donehere))
+		{
+			if(i<size(iv))
+			{
+				if(iv[i+1]==iv[i]+1)
+				{
+					iv[i]=i;
+					i=i+1;
+				}else{
+					iv[i]=iv[i]+1;
+					i=i+1;
+					donehere=1;
+				}
+			}else{
+				if(iv[i]<nrows(M))
+				{
+					iv[i]=iv[i]+1;
+					i=i+1;
+					donehere=1;
+				}else{
+					done=1;
+					donehere=1;
+					i=i+1;
+				}
+			}
+		}
+
+		kill i,donehere;
+	}
+
+
+	kill S,iv,done;
 	return(L);
-}
-
-
-static proc subsetUtil(intmat M, int d, intmat S, int i, int j, list L)
-{
-	list result=L;
-
-	if(j>=d)
-	{
-		cone c=Gfan::coneViaPoints(S);
-		result=insert(result,c);
-		kill c;
-		return(result);
-	}
-
-	if(i>nrows(M))
-	{
-		return(result);
-	}
-
-	S[j+1,1..ncols(M)]=M[i,1..ncols(M)];
-
-	if(Gfan::dimension(Gfan::coneViaPoints(S))==j+1)
-	{
-		result=subsetUtil(M,d,S,i+1,j+1,result);
-	}
-
-	result=subsetUtil(M,d,S,i+1,j,result);
-
-	return(result);
 }
 
 
