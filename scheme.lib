@@ -6640,7 +6640,10 @@ proc fanDecomposition(intmat M, list #)
 	cone C=Gfan::coneViaPoints(M);
 	int i,j,k;
 	int d=Gfan::dimension(C);
-	list L=subcones(M);
+	intvec iv=1..d;
+	int done=0;
+	intmat Sub[d][ncols(M)];
+	
 	if(size(#)==1)
 	{
 		if(typeof(#[1])=="intvec")
@@ -6656,10 +6659,11 @@ proc fanDecomposition(intmat M, list #)
 
 		list LEQ;
 
-		for(i=1; i<=size(L); i=i+1)
+		while(!done)
 		{
 			int ignore=0;
-			bigintmat I=Gfan::inequalities(L[i]);
+			Sub=M[iv,1..ncols(M)];
+			bigintmat I=Gfan::inequalities(Gfan::coneViaPoints(Sub));
 			bigintmat S=I*transpose(P);
 			list LT;
 			for(j=1; j<=nrows(S); j=j+1)
@@ -6697,6 +6701,37 @@ proc fanDecomposition(intmat M, list #)
 				kill T,D;
 			}
 			kill I,S,LT,ignore;
+
+			i=1;
+			int donehere=0;
+			while((i<=size(iv)) && (!donehere))
+			{
+				if(i<size(iv))
+				{
+					if(iv[i+1]==iv[i]+1)
+					{
+						iv[i]=i;
+						i=i+1;
+					}else{
+						iv[i]=iv[i]+1;
+						i=i+1;
+						donehere=1;
+					}
+				}else{
+					if(iv[i]<nrows(M))
+					{
+						iv[i]=iv[i]+1;
+						i=i+1;
+						donehere=1;
+					}else{
+						done=1;
+						donehere=1;
+						i=i+1;
+					}
+				}
+			}
+
+			kill donehere;
 		}
 
 		list LF=list(C);
@@ -6725,9 +6760,10 @@ proc fanDecomposition(intmat M, list #)
 		kill P;
 	}else{
 		list LF=list(C);
-		for(i=1; i<=size(L); i=i+1)
+		while(!done)
 		{
-			intmat N=intmat(Gfan::inequalities(L[i]));
+			Sub=M[iv,1..ncols(M)];
+			intmat N=intmat(Gfan::inequalities(Gfan::coneViaPoints(Sub)));
 			for(j=1; j<=nrows(N); j=j+1)
 			{
 				intmat P[1][ncols(N)]=N[j,1..ncols(N)];
@@ -6752,12 +6788,43 @@ proc fanDecomposition(intmat M, list #)
 				kill D,P,ND,sLF;
 			}
 			kill N;
+
+			i=1;
+			int donehere=0;
+			while((i<=size(iv)) && (!donehere))
+			{
+				if(i<size(iv))
+				{
+					if(iv[i+1]==iv[i]+1)
+					{
+						iv[i]=i;
+						i=i+1;
+					}else{
+						iv[i]=iv[i]+1;
+						i=i+1;
+						donehere=1;
+					}
+				}else{
+					if(iv[i]<nrows(M))
+					{
+						iv[i]=iv[i]+1;
+						i=i+1;
+						donehere=1;
+					}else{
+						done=1;
+						donehere=1;
+						i=i+1;
+					}
+				}
+			}
+
+			kill donehere;
 		}
 	}
 
 	fan F = Gfan::fanViaCones(LF);
 
-	kill C,d,L,i,j,k;
+	kill C,d,i,j,k,Sub;
 	return(F);
 	kill F;
 }
