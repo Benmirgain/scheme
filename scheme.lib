@@ -6824,7 +6824,7 @@ proc fanDecomposition(intmat M, list #)
 
 	fan F = Gfan::fanViaCones(LF);
 
-	kill C,d,i,j,k,Sub;
+	kill C,d,i,j,k,Sub,iv;
 	return(F);
 	kill F;
 }
