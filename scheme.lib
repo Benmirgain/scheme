@@ -6586,7 +6586,6 @@ proc subcones(intmat M)
 	list L;
 	intvec iv=1..d;
 	int done=0;
-	int count=0;
 
 	while(!done)
 	{
@@ -6594,8 +6593,7 @@ proc subcones(intmat M)
 		cone C=Gfan::coneViaPoints(S);
 		if(Gfan::dimension(C)==d)
 		{
-			count=count+1;
-			L[count]=C;
+			L[size(L)+1]=C;
 		}
 		kill C;
 
@@ -6668,12 +6666,12 @@ proc fanDecomposition(intmat M, list #)
 			{
 				if(S[j,1]>0)
 				{
-					LT=LT+list(list(I[j,1..ncols(I)]));
+					LT[size(LT)+1]=list(I[j,1..ncols(I)]);
 				}else{
 				if(S[j,1]==0)
 				{
 					bigintmat BIM[1][ncols(I)] = I[j,1..ncols(I)];
-					LEQ=LEQ+list(BIM);
+					LEQ[size(LEQ)+1]=BIM;
 					kill BIM;
 				}else{
 				if(S[j,1]<0)
@@ -6706,26 +6704,22 @@ proc fanDecomposition(intmat M, list #)
 		{
 			cone D=Gfan::coneViaInequalities(LEQ[i]);
 			cone ND=Gfan::negatedCone(D);
-			list G;
 
-			for(j=1; j<=size(LF); j=j+1)
+			int sLF=size(LF);
+			for(j=1; j<=sLF; j=j+1)
 			{
 				cone E=LF[j];
 
-				if(Gfan::containsInSupport(D,E) || Gfan::containsInSupport(ND,E))
+				if(!(Gfan::containsInSupport(D,E) || Gfan::containsInSupport(ND,E)))
 				{
-					G = insert(G,E);
-				}else{
-					G = insert(G,Gfan::convexIntersection(E,D));
-					G = insert(G,Gfan::convexIntersection(E,ND));
+					LF[j] = Gfan::convexIntersection(E,D);
+					LF[size(LF)+1] = Gfan::convexIntersection(E,ND);
 				}
 
 				kill E;
 			}
 
-			LF=G;
-
-			kill D,ND,G;
+			kill D,ND,sLF;
 		}
 
 		kill P;
@@ -6736,27 +6730,26 @@ proc fanDecomposition(intmat M, list #)
 			intmat N=intmat(Gfan::inequalities(L[i]));
 			for(j=1; j<=nrows(N); j=j+1)
 			{
-				list G;
 				intmat P[1][ncols(N)]=N[j,1..ncols(N)];
 				cone D=Gfan::coneViaInequalities(P);
-				for(k=1; k<=size(LF); k=k+1)
+				cone ND=Gfan::negatedCone(D);
+
+				int sLF=size(LF);
+				for(k=1; k<=sLF; k=k+1)
 				{
 				    //"i="+string(i)+"/"+string(size(L))+", j="+string(j)+"/"+string(nrows(N))+", k="+string(k)+"/"+string(size(LF));
-					cone E;
-					E=Gfan::convexIntersection(LF[k],D);
-					if(Gfan::dimension(E)==d)
+					cone E=LF[k];
+
+					if(!(Gfan::containsInSupport(D,E) || Gfan::containsInSupport(ND,E)))
 					{
-						G=insert(G,E);
+						LF[k] = Gfan::convexIntersection(E,D);
+						LF[size(LF)+1] = Gfan::convexIntersection(E,ND);
 					}
-					E=Gfan::convexIntersection(LF[k],Gfan::negatedCone(D));
-					if(Gfan::dimension(E)==d)
-					{
-						G=insert(G,E);
-					}
+
 					kill E;
 				}
-				LF=G;
-				kill G,D,P;
+				
+				kill D,P,ND,sLF;
 			}
 			kill N;
 		}

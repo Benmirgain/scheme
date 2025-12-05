@@ -6,6 +6,10 @@ killall();
 
 system("--ticks-per-sec",1000);
 
+string s;
+int dotiming=1;
+int t;
+
 //intmat H[5][3]=1,0,0,1,1,0,1,0,1,1,1,1,4,1,1;
 int n_vec=20;
 int d=8;
@@ -13,9 +17,27 @@ int b=20;
 intvec v=b:(n_vec*d);
 intmat H=random(b,n_vec,d)+intmat(v,n_vec,d);
 
-//def F=fanDecomposition(H);
+/*if(dotiming)
+{
+    timer=0;
+    t=timer;
+}
 
-//intvec P=24,3,7;
+def F=fanDecomposition(H);
+
+if(dotiming)
+{
+    t=timer-t;
+
+    s = "It took " + string(t div 60000) + " min ";
+    t=t%60000;
+    s = s + string(t div 1000) + " sec ";
+    t=t%1000;
+    s = s + string(t) + " ms";
+    s;
+}*/
+
+//intvec P=2,1,1;
 intvec P=0:d;
 for(int i=1; i<=n_vec; i=i+1)
 {
@@ -23,17 +45,23 @@ for(int i=1; i<=n_vec; i=i+1)
     P=P+v;
 }
 
-timer=0;
-int t=timer;
+if(dotiming)
+{
+    timer=0;
+    t=timer;
+}
 
 def G=fanDecomposition(H,P);
 
-t=timer-t;
+if(dotiming)
+{
+    t=timer-t;
 
-string s = "It took " + string(t div 60000) + " min ";
-t=t%60000;
-s = s + string(t div 1000) + " sec ";
-t=t%1000;
-s = s + string(t) + " ms";
-s;
+    s = "It took " + string(t div 60000) + " min ";
+    t=t%60000;
+    s = s + string(t div 1000) + " sec ";
+    t=t%1000;
+    s = s + string(t) + " ms";
+    s;
+}
 
