@@ -1,0 +1,52 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+intmat M[2][2]=1,0,0,1;
+cone C1=coneViaPoints(M);
+M=-1,0,0,1;
+cone C2=coneViaPoints(M);
+M=1,0,0,-1;
+cone C3=coneViaPoints(M);
+M=-1,0,0,-1;
+cone C4=coneViaPoints(M);
+
+fan F=fanViaCones(C1,C2,C3,C4);
+
+scheme X=makeToricVariety(F);
+
+
+
+kill M;
+intmat M[3][3]=1,0,0,0,1,0,1,1,1;
+C1=coneViaPoints(M);
+M=1,0,0,0,0,1,1,1,1;
+C2=coneViaPoints(M);
+M=0,1,0,0,0,1,1,1,1;
+C3=coneViaPoints(M);
+F=fanViaCones(C1,C2,C3);
+
+X=makeToricVariety(F);
+X;
+
+
+
+kill M;
+intmat M[2][2]=1,0,0,1;
+C1=coneViaPoints(M);
+M=1,0,-2,-3;
+C2=coneViaPoints(M);
+M=0,1,-2,-3;
+C3=coneViaPoints(M);
+F=fanViaCones(C1,C2,C3);
+
+X=makeToricVariety(F);
+X;
+
+
+
+intvec w=1,2,3;
+X=makeWeightProjScheme(w);
+X;
