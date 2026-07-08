@@ -100,7 +100,7 @@ LIB "elim.lib";
 LIB "presolve.lib";
 LIB "gfan.lib";
 LIB "sing4ti2.lib";
-LIB "multigrading.lib"
+LIB "multigrading.lib";
 
 
 
@@ -115,7 +115,8 @@ static proc mod_init()
   newstruct("morphism","scheme preim, scheme im, list chartmaps");
   newstruct("affRatMap","affVariety preim, affVariety im, list ratFuncs");
   newstruct("projRatMap","projVariety preim, projVariety im, list ratFuncs");
-  newstruct("divisor","scheme space, list schemes, list mults");
+  newstruct("WeilDivisor","scheme space, list schemes, list mults");
+  newstruct("CartierDivisor","def space, list sections");
   newstruct("ratFunc","ring in, poly num, poly den");
   newstruct("blowUpMap","scheme blow, scheme base, scheme exDiv, scheme center, list maps");
   newstruct("iterativeScheme","list cover, list maps");
@@ -161,10 +162,10 @@ static proc mod_init()
   system("install","ratFunc","^",expratFunc,2);
   system("install","chartmap","[",ChartmapCompIdeal,2);
   system("install","chartmap","*",ChartmapCompChartmap,2);
-  system("install","divisor","=",makeDivisor,1);
-  system("install","divisor","+",AddDivisor,2);
-  system("install","divisor","-",SubDivisor,2);
-  system("install","divisor","*",intTimesDivisor,2);
+  system("install","WeilDivisor","=",makeDivisor,1);
+  system("install","WeilDivisor","+",AddDivisor,2);
+  system("install","WeilDivisor","-",SubDivisor,2);
+  system("install","WeilDivisor","*",intTimesDivisor,2);
   system("install","morphism","=",makeMorphism,1);
   system("install","morphism","*",MorphismCompMorphism,2);
   system("install","iterativeChart","print",printItChart,1);
@@ -196,21 +197,21 @@ static proc partSum(scheme X, int i, int lower, int upper, ideal S)
 
 
 proc IntersectionNumber(list #)
-"USAGE: IntersectionNumber(D1,D2,...,Dn); D1,D2,... divisors
+"USAGE: IntersectionNumber(D1,D2,...,Dn); D1,D2,... Weil Divisors
 ASSUME: The inputs all lie in general position in the same ambient space and 
         the number of inputs is equal to the dimension of the ambient space
 RETURN: The intersection number of the inputs
 EXAMPLE: example IntersectionNumber; shows an example"
 {
     int i,j,k,l;
-	if(typeof(#[1])!="divisor")
+	if(typeof(#[1])!="WeilDivisor")
 	{   ERROR("Wrong inputs!");}
 	scheme X=#[1].space;
 	if(size(#)!=SchemeDimension(X))
 	{   ERROR("Wrong number of inputs!");}
 	for(k=1; k<=size(#); k=k+1)
 	{
-	   if(typeof(#[k])!="divisor")
+	   if(typeof(#[k])!="WeilDivisor")
 	   {   ERROR("Wrong inputs!");}
 	   if(#[k].space!=X)
 	   {   ERROR("Incompatible inputs!");}
@@ -274,12 +275,12 @@ example
 ring R=0,(x,y,z),dp;
 scheme X=makeProjScheme(0);
 scheme Y=makeProjScheme(ideal(x-z),X);
-divisor A=list(Y,2),X;
+WeilDivisor A=list(Y,2),X;
 Y=makeProjScheme(ideal(x2-zy),X);
 scheme Z=makeProjScheme(ideal(x2z-z2y+y3),X);
-divisor B=list(Y,1),list(Z,1),X;
+WeilDivisor B=list(Y,1),list(Z,1),X;
 Y=makeProjScheme(ideal(y),X);
-divisor C=list(Y,1),X;
+WeilDivisor C=list(Y,1),X;
 IntersectionNumber(3*C-A,B);
 }
 
@@ -3051,7 +3052,7 @@ EXAMPLE: example makeDivisor; shows an example"
    { ERROR("Last entry must a scheme")}
    scheme X=#[size(#)];
    
-   divisor result;
+   WeilDivisor result;
    result.space=X;
    for(int i=1; i<=size(#)-1; i=i+1)
    {
@@ -3067,36 +3068,36 @@ ring R=0,(x,y,z),dp;
 scheme X=makeProjScheme(0);
 
 scheme Y=makeProjScheme(ideal(x-z),X);
-divisor A=list(Y,2),X;
+WeilDivisor A=list(Y,2),X;
 
 Y=makeProjScheme(ideal(x2-zy),X);
 scheme Z=makeProjScheme(ideal(x2z-z2y+y3),X);
-divisor B=list(Y,1),list(Z,1),X;
+WeilDivisor B=list(Y,1),list(Z,1),X;
 
 Y=makeProjScheme(ideal(y),X);
-divisor C=list(Y,1),X;
+WeilDivisor C=list(Y,1),X;
 
-divisor D=A+3*B-C;
+WeilDivisor D=A+3*B-C;
 D.schemes;
 D.mults;
 
-divisor E=2*A-4*B;
+WeilDivisor E=2*A-4*B;
 E.schemes;
 E.mults;
 
-divisor F=D+E;
+WeilDivisor F=D+E;
 F.schemes;
 F.mults;
 }
 
 
 // Addition of divisors
-static proc AddDivisor(divisor C, divisor D)
+static proc AddDivisor(WeilDivisor C, WeilDivisor D)
 {
     if(C.space!=D.space)
     {   ERROR("Divisors incompatible.");}
     
-	divisor result=C;
+	WeilDivisor result=C;
 	result.space=C.space;
 	int i,k,check;
 	for(i=1; i<=size(D.schemes); i=i+1)
@@ -3130,18 +3131,18 @@ static proc AddDivisor(divisor C, divisor D)
 
 
 // Substraction of divisors
-static proc SubDivisor(divisor C, divisor D)
+static proc SubDivisor(WeilDivisor C, WeilDivisor D)
 {
-    divisor result=(-1)*D;
+    WeilDivisor result=(-1)*D;
 	result=result+C;
 	return(result);
 }
 
 
-// Multiplication of a divisor with an integer
-static proc intTimesDivisor(int n, divisor D)
+// Multiplication of a WeilDivisor with an integer
+static proc intTimesDivisor(int n, WeilDivisor D)
 {
-    divisor result;
+    WeilDivisor result;
 	result.space=D.space;
 	if(n!=0)
 	{
@@ -6109,9 +6110,9 @@ EXAMPLE: example strictTransform, shows an example"
 	  return(result);
    }
 
-   if(typeof(Y)=="divisor")
+   if(typeof(Y)=="WeilDivisor")
    {
-		divisor result=Y;
+		WeilDivisor result=Y;
 		result.space=pi.blow;
 		for(int i=1; i<=size(Y.schemes); i=i+1)
 		{
