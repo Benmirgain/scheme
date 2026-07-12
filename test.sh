@@ -1,2 +1,2 @@
-export SINGULARPATH="/home/ben/Scheme/Test/"
-/home/ben/Singular4/bin/Singular --execute="<\"TestAll.sing\"; exit;"
+export SINGULARPATH="/home/ben/scheme/Test/"
+/home/ben/Singular/bin/Singular --execute="<\"TestAll.sing\"; exit;"

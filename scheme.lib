@@ -59,7 +59,6 @@ ChartmapCompIdeal(phi,I); Computes the inverse image under phi of the closed sub
 ChartmapToMorphism(phi); converts a chartmap phi to a morphism
 ChartToScheme(U); converts chart U to a scheme
 CompleteIntersectionCover(X,W); Computes a scheme isomorphic to X, where each chart is a complete intersection
-SchemeDimension(X); computes the dimension of the scheme X
 FibreProduct(X,Y); computes the fibre product of the scheme X with the scheme Y
 HybrSmoothTest(X); smoothness test for scheme X, only works for equidimensional X
 Image(phi,X); computes the image of a subscheme X under a morphism phi
@@ -106,29 +105,33 @@ LIB "multigrading.lib";
 
 static proc mod_init()
 {
-  newstruct("chart","ring in, ideal value");
-  newstruct("chartmap","chart preim, chart im, ideal dom, list ratFuncs");
-  newstruct("scheme","list cover, list maps");
-  newstruct("affVariety","ring in, ideal value");
-  newstruct("projVariety","ring in, ideal value");
-  newstruct("product","ring in, ideal value, list gradings");
-  newstruct("morphism","scheme preim, scheme im, list chartmaps");
-  newstruct("affRatMap","affVariety preim, affVariety im, list ratFuncs");
-  newstruct("projRatMap","projVariety preim, projVariety im, list ratFuncs");
-  newstruct("WeilDivisor","scheme space, list schemes, list mults");
-  newstruct("CartierDivisor","def space, list sections");
-  newstruct("ratFunc","ring in, poly num, poly den");
-  newstruct("blowUpMap","scheme blow, scheme base, scheme exDiv, scheme center, list maps");
-  newstruct("iterativeScheme","list cover, list maps");
-  newstruct("iterativeChart","def parent, chart entry, chartmap parentmap, chartmap parentInverseMap, intvec label");
-  newstruct("coherentSheaf","list cover, def space");
+  newstruct("AttribTable","list keys, list values");
+  newstruct("chart","ring in, ideal value, AttribTable attributes");
+  newstruct("chartmap","chart preim, chart im, ideal dom, list ratFuncs, AttribTable attributes");
+  newstruct("scheme","list cover, list maps, AttribTable attributes");
+  newstruct("affVariety","ring in, ideal value, AttribTable attributes");
+  newstruct("projVariety","ring in, ideal value, AttribTable attributes");
+  newstruct("product","ring in, ideal value, list gradings, AttribTable attributes");
+  newstruct("morphism","scheme preim, scheme im, list chartmaps, AttribTable attributes");
+  newstruct("affRatMap","affVariety preim, affVariety im, list ratFuncs, AttribTable attributes");
+  newstruct("projRatMap","projVariety preim, projVariety im, list ratFuncs, AttribTable attributes");
+  newstruct("WeilDivisor","def space, list schemes, list mults, AttribTable attributes");
+  newstruct("CartierDivisor","def space, list sections, AttribTable attributes");
+  newstruct("RatSection","def space, list affineparts, AttribTable attributes");
+  newstruct("ratFunc","ring in, poly num, poly den, AttribTable attributes");
+  newstruct("blowUpMap","scheme blow, scheme base, scheme exDiv, scheme center, list maps, AttribTable attributes");
+  newstruct("iterativeScheme","list cover, list maps, AttribTable attributes");
+  newstruct("iterativeChart","def parent, chart entry, chartmap parentmap, chartmap parentInverseMap, intvec label, AttribTable attributes");
+  newstruct("coherentSheaf","list cover, def space, AttribTable attributes");
   
+  system("install","AttribTable","print",PrintAttributes,1);
   system("install","chart","=",makeChart,1);
   system("install","chartmap","=",makeChartmap,1);
   system("install","chart","print",printChart,1);
   system("install","chartmap","print",printChartmap,1);
   system("install","chart","==",equalChart,2);
   system("install","chart","!=",notequalChart,2);
+  system("install","chart","dim",ChartDimension,1);
   system("install","chartmap","==",equalChartmap,2);
   system("install","chartmap","!=",notequalChartmap,2);
   system("install","affVariety","=",makeaffVar,1);
@@ -150,6 +153,7 @@ static proc mod_init()
   system("install","scheme","==",equalScheme,2);
   system("install","scheme","!=",notequalScheme,2);
   system("install","scheme","print",printScheme,1);
+  system("install","scheme","dim",SchemeDimension,1);
   system("install","ratFunc","=",makeratFunc,1);
   system("install","ratFunc","print",printratFunc,1);
   system("install","ratFunc","string",stringratFunc,4);
@@ -171,6 +175,298 @@ static proc mod_init()
   system("install","iterativeChart","print",printItChart,1);
   system("install","iterativeScheme","print",printItScheme,1);
 }
+
+
+
+////////////////////////////////////////////////////////////////
+//    Branching Stuff
+////////////////////////////////////////////////////////////////
+
+
+proc isEmpty()
+"USAGE: isEmpty(C); chart C
+RETURN: 1 if chart is the empty set, otherwise 0
+EXAMPLE: example isEmpty; shows an example"
+{
+	branchTo("chart",isEmptyC);
+	branchTo("chartmap",isEmptyCM);
+	ERROR("Wrong input!");
+}
+example
+{"EXAMPLE:";
+ring R=0,(x,y,z),dp;
+chart U=ideal(x+y+1,x+y+z,z);
+isEmpty(U);
+}
+
+
+proc ForceStd()
+"USAGE: ForceStd(C); chart C
+RETURN: chart C with standard basis for the ideal defining it
+EXAMPLE: example ForceStd; shows an example"
+{
+	branchTo("chart",ForceStdC);
+	ERROR("Wrong input!");
+}
+example
+{"EXAMPLE:";
+ring R=0,(x,y,z),dp;
+chart U=ideal(y2+x,y2+z,z);
+U=ForceStd(U);
+GetAttribute(U,"isSB");
+}
+
+
+proc IdentityMap()
+"USAGE: IdentityMap(X); chart X
+RETURN: the identity map on X
+EXAMPLE: example IdentityMap; shows an example"
+{
+	branchTo("chart",IdentityMapC);
+	ERROR("Wrong input!");
+}
+example
+{"EXAMPLE:";
+ring R=0,(x,y,z),dp;
+chart U=ideal(x2-yz);
+IdentityMap(U);
+}
+
+
+proc GetPreimageSpace()
+"USAGE: GetPreimage(phi); chartmap phi
+RETURN: the preimage chart of phi
+EXAMPLE: example GetPreimage; shows an example"
+{
+	branchTo("chartmap",GetPreimageSpaceCM);
+	ERROR("Wrong input!");
+}
+example
+{"EXAMPLE:";
+ring R=0,(a,b,c,d),dp;
+chart U=ideal(ad-bc);
+list L=list(makeratFunc(a,b),makeratFunc(c,d));
+ring S=0,(x),dp;
+chart V=ideal(0);
+chartmap f=U,V,L;
+GetPreimageSpace(f);
+}
+
+
+proc GetImageSpace()
+"USAGE: GetImage(phi); chartmap phi
+RETURN: the image chart of phi
+EXAMPLE: example GetImage; shows an example"
+{
+	branchTo("chartmap",GetImageSpaceCM);
+	ERROR("Wrong input!");
+}
+example
+{"EXAMPLE:";
+ring R=0,(a,b,c,d),dp;
+chart U=ideal(ad-bc);
+list L=list(makeratFunc(a,b),makeratFunc(c,d));
+ring S=0,(x),dp;
+chart V=ideal(0);
+chartmap f=U,V,L;
+GetImageSpace(f);
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////
+//    Attribute Stuff
+/////////////////////////////////////////////////////////////////
+
+
+proc SetAttribute(def X, string key, def value)
+{
+	if(typeof(X)=="AttribTable")
+	{
+		int foundkey=0;
+		for(int i=1; i<=size(X.keys); i=i+1)
+		{
+			if(X.keys[i]==key)
+			{
+				X.values[i]=value;
+				foundkey=1;
+				break;
+			}
+		}
+		if(!foundkey)
+		{
+			X.keys[size(X.keys)+1]=key;
+			X.values[size(X.values)+1]=value;
+		}
+		kill i,foundkey;
+	}
+
+	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
+		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+
+	for(int i=1; i<=size(Typelist); i=i+1)
+	{
+		if(typeof(X)==Typelist[i])
+		{
+			X.attributes=SetAttribute(X.attributes,key,value);
+			break;
+		}
+	}
+
+	kill i,Typelist;
+
+	return(X);
+}
+
+
+proc GetAttribute(def X, string key)
+{
+	if(typeof(X)=="AttribTable")
+	{
+		int foundkey=0;
+		for(int i=1; i<=size(X.keys); i=i+1)
+		{
+			if(X.keys[i]==key)
+			{
+				return(X.values[i]);
+				kill i,foundkey;
+			}
+		}
+		if(!foundkey)
+		{
+			kill i,foundkey;
+			string s;
+			return(s);
+		}
+	}
+
+	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
+		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+	
+	for(int i=1; i<=size(Typelist); i=i+1)
+	{
+		if(typeof(X)==Typelist[i])
+		{
+			kill i,Typelist;
+			return(GetAttribute(X.attributes,key));
+		}
+	}
+}
+
+
+proc RemoveAttribute(def X, string key)
+{
+	if(typeof(X)=="AttribTable")
+	{
+		for(int i=1; i<=size(X.keys); i=i+1)
+		{
+			if(X.keys[i]==key)
+			{
+				X.keys=delete(X.keys,i);
+				X.values=delete(X.values,i);
+				kill i;
+				return(X);
+			}
+		}
+	}
+
+	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
+		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+
+	for(int i=1; i<=size(Typelist); i=i+1)
+	{
+		if(typeof(X)==Typelist[i])
+		{
+			X.attributes=RemoveAttribute(X.attributes,key);
+			break;
+		}
+	}
+
+	kill i,Typelist;
+
+	return(X);
+}
+
+
+proc isAttribute(def X, string key)
+{
+	if(typeof(X)=="AttribTable")
+	{
+		for(int i=1; i<=size(X.keys); i=i+1)
+		{
+			if(X.keys[i]==key)
+			{
+				kill i;
+				return(1);
+			}
+		}
+		kill i;
+		return(0);
+	}
+
+	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
+		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+
+	for(int i=1; i<=size(Typelist); i=i+1)
+	{
+		if(typeof(X)==Typelist[i])
+		{
+			int result=isAttribute(X.attributes,key);
+			kill i,Typelist;
+			return(result);
+		}
+	}
+}
+
+
+proc AttributeList(def X)
+{
+	if(typeof(X)=="AttribTable")
+	{
+		return(X.keys);
+	}
+
+	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
+		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+
+	for(int i=1; i<=size(Typelist); i=i+1)
+	{
+		if(typeof(X)==Typelist[i])
+		{
+			return(AttributeList(X.attributes));
+		}
+	}
+
+	return(list());
+
+	kill i,Typelist;
+}
+
+
+proc PrintAttributes(def X)
+{
+	list L=AttributeList(X);
+	if(size(L)==0)
+	{
+		"Object has no attributes";
+	}
+	for(int i=1; i<=size(L); i=i+1)
+	{
+		string key=L[i];
+		def value=GetAttribute(X,key);
+		key+" : type "+typeof(value);
+		kill key,value;
+	}
+	kill i,L;
+}
+
+
 
 
 ///////////////////////////////////////////////////
@@ -207,7 +503,7 @@ EXAMPLE: example IntersectionNumber; shows an example"
 	if(typeof(#[1])!="WeilDivisor")
 	{   ERROR("Wrong inputs!");}
 	scheme X=#[1].space;
-	if(size(#)!=SchemeDimension(X))
+	if(size(#)!=dim(X))
 	{   ERROR("Wrong number of inputs!");}
 	for(k=1; k<=size(#); k=k+1)
 	{
@@ -239,7 +535,7 @@ EXAMPLE: example IntersectionNumber; shows an example"
 	        j=iv[k];
 			Z=intersection(Z,#[k].schemes[j]);
 		}
-		if(SchemeDimension(Z)!=0)
+		if(dim(Z)!=0)
 		{   ERROR("Divisors not in general position!");}
 		for(l=1;l<=size(X.cover);l=l+1)
 	    {
@@ -290,15 +586,48 @@ IntersectionNumber(3*C-A,B);
 //      Chart stuff
 //////////////////////////////////////////////////////////////////////////
 
-proc makeChart(ideal I)
-"USAGE: makeChart(I); ideal I
+
+proc makeChart(ideal I, list #)
+"USAGE: makeChart(I[,A]); ideal I[, AttribTable A]
 RETURN: chart representing Spec R/I, where R=basering
 EXAMPLE: example makeChart; shows an example"
 {
-   chart C;
-   C.in=basering;
-   C.value=I;
-   return(C);
+   	chart C;
+   	C.in=basering;
+   	C.value=I;
+   	
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="AttribTable")
+		{
+			C.attributes=#[1];
+		}else{
+			ERROR("Wrong input!");
+		}
+	}
+
+	def s=attrib(I,"isSB");
+	if(typeof(s)=="int")
+	{
+		C=SetAttribute(C,"isSB",s);
+	}
+	kill s;	
+
+	def s=attrib(I,"withDim");
+	if(typeof(s)=="int")
+	{
+		C=SetAttribute(C,"dimension",s);
+	}
+	kill s;
+
+	if(size(I)==0)
+	{
+		C=SetAttribute(C,"isFullSpace",1);
+	}else{
+		C=SetAttribute(C,"isFullSpace",0);
+	}
+
+   	return(C);
 }
 example
 {"EXAMPLE:";
@@ -307,49 +636,152 @@ chart U=ideal(x2-yz);
 U;
 }
 
-proc isEmpty(chart C)
-"USAGE: isEmpty(C); chart C
-RETURN: 1 if chart is the empty set, otherwise 0
-EXAMPLE: example isEmpty; shows an example"
+// Print routine for chart
+static proc printChart(chart C)
 {
-	def R=C.r_value;
-	setring R;
-	ideal I=std(C.value);
-	if(I==1)
+   	def S=C.r_value;
+   	setring S;
+	if(!isEmpty(C))
+   	{
+   		"ring = "+string(S);
+   		"quotient = "+string(C.value);
+		if(voice<=2)
+		{
+			"Attributes:";
+			PrintAttributes(C);
+		}
+   	}else{
+		"Empty Chart";
+   	}
+}
+
+static proc ForceStdC(chart C)
+{
+	if(isAttribute(C,"isSB"))
 	{
-		kill I;
-		kill R;
-		return(1);
+		if(GetAttribute(C,"isSB"))
+		{
+			return(C);
+		}else{
+			def R=C.r_value;
+			setring R;
+			C.value=std(C.value);
+			C=SetAttribute(C,"isSB",1);
+			kill R;
+			return(C);
+		}
 	}else{
-		kill I;
+		def R=C.r_value;
+		setring R;
+		C.value=std(C.value);
+		C=SetAttribute(C,"isSB",1);
 		kill R;
-		return(0);
+		return(C);
 	}
 }
-example
-{"EXAMPLE:";
-ring R=0,(x,y,z),dp;
-chart U=ideal(x+y+1,x+y+z,z);
-isEmpty(U);
+
+static proc isEmptyC(chart C)
+{
+	if(isAttribute(C,"isEmpty"))
+	{
+		return(GetAttribute(C,"isEmpty"));
+	}else{
+		def R=C.r_value;
+		setring R;
+		if(isAttribute(C,"isSB"))
+		{
+			if(GetAttribute(C,"isSB"))
+			{
+				if(C.value[1]==1)
+				{
+					kill R;
+					return(1);
+				}else{
+					kill R;
+					return(0);
+				}
+			}else{
+				C.value=std(C.value);
+				if(C.value[1]==1)
+				{
+					kill R;
+					return(1);
+				}else{
+					kill R;
+					return(0);
+				}
+			}
+		}else{
+			C.value=std(C.value);
+			if(C.value[1]==1)
+			{
+				kill R;
+				return(1);
+			}else{
+				kill R;
+				return(0);
+			}
+		}
+	}
+}
+
+static proc ChartDimension(chart C)
+{
+	if(isAttribute(C,"dimension"))
+	{
+		return(GetAttribute(C,"dimension"));
+	}else{
+		def R=C.r_value;
+		setring R;
+		C=ForceStdC(C);
+		int d=dim(C.value);
+		kill R;
+		return(d);
+	}
 }
 
 // For comparing charts
 static proc equalChart(chart U, chart V)
 {
-   if(U.in!=V.in)
-   {
-      return(0);
-   }else{
-	  def S=U.in;
-	  setring S;
+	if(charstr(U.in)!=charstr(V.in))
+   	{
+		return(0);
+   	}
+
+   	if(nvars(U.in)!=nvars(V.in))
+   	{
+    	return(0);
+   	}
+
+	U=ForceStd(U);
+	V=ForceStd(V);
+
+	def R=U.r_value;
+	def S=V.r_value;
+
+	setring S;
+	ideal JS=V.value;
+	setring R;
+	ideal J=fetch(S,JS);
+	attrib(J,"isSB",1);
+	ideal I=U.value;
 	  
-	  if((std(quotient(U.value,V.value))!=1)&&(std(quotient(V.value,U.value))!=1))
-	  {
-		 return(0);
-	  }
+	if((size(reduce(I,J))==0)&&(size(reduce(J,I))==0))
+	{
+		setring S;
+		kill JS;
+		setring R;
+		kill J,I;
+		kill R,S;
+		return(1);
+	}
 	  
-	  return(1);
-   }
+	setring S;
+	kill JS;
+	setring R;
+	kill J,I;
+	kill R,S;
+	return(0);
 }
 
 // Also for comparing charts
@@ -494,47 +926,90 @@ psi=U,V,F,G;
 psi==phi;
 }
 
-// Print routine for chart
-static proc printChart(chart C)
+static proc IdentityMapC(chart C)
 {
-   def S=C.r_value;
-   setring S;
-   if(C.value!=1)
+   def R=C.r_value;
+   setring R;
+   list RatFuncs;
+   for(int i=1; i<=nvars(R); i=i+1)
    {
-   "ring = "+string(S);
-   "quotient = "+string(C.value);
-   }else{
-	"Empty Set"
+	  ratFunc F=var(i);
+	  RatFuncs[i]=F;
+	  kill F;
    }
+   kill i;
+   chartmap result=makeChartmap(C,C,RatFuncs);
+   kill RatFuncs,R;
+   return(result);
+}
+
+static proc isEmptyCM(chartmap phi)
+{
+	if(isAttribute(phi,"isEmpty"))
+	{
+		return(GetAttribute(phi,"isEmpty"));
+	}else{
+		def R=phi.r_dom;
+		setring R;
+		if(size(phi.dom)==0)
+		{
+			kill R;
+			return(1);
+		}else{
+			kill R;
+			return(0);
+		}
+	}
+}
+
+static proc GetPreimageSpaceCM(chartmap phi)
+{
+	return(phi.preim);
+}
+
+static proc GetImageSpaceCM(chartmap phi)
+{
+	return(phi.im);
 }
 
 // Print routine for chartmap
 static proc printChartmap(chartmap phi)
 {
-   def R=phi.preim.r_value;
-   def S=phi.im.r_value;
-   int i,k;
+	if(isEmpty(phi))
+	{
+		"Empty Chartmap";
+	}else{
+   		def R=phi.preim.r_value;
+   		def S=phi.im.r_value;
+   		int i,k;
 
-   setring R;
-   "Preimage ring: ("+string(R)+")/("+string(phi.preim.value)+")"; 
-   "Domain: D("+string(phi.dom)+")";   
-   setring S;
-   "Image ring: ("+string(S)+")/("+string(phi.im.value)+")";
-   string st;
-   int n=size(phi.ratFuncs);
-   int m=nvars(S);
-   for(k=1; k<=n; k=k+1)
-   {
-   setring R;
-   "Map restricted to D("+string(phi.dom[k])+"):";
-   st="     ("+varstr(R)+") -----> ( ";   
-   for(i=1; i<m; i=i+1)
-   {
-      st=st+string(phi.ratFuncs[k][i])+" , ";
-   }
-   st=st+string(phi.ratFuncs[k][m])+" )";
-   st;
-   }
+   		setring R;
+   		"Preimage ring: ("+string(R)+")/("+string(phi.preim.value)+")"; 
+   		"Domain: D("+string(phi.dom)+")";   
+  		setring S;
+   		"Image ring: ("+string(S)+")/("+string(phi.im.value)+")";
+   		string st;
+   		int n=size(phi.ratFuncs);
+   		int m=nvars(S);
+		setring R;
+   		for(k=1; k<=n; k=k+1)
+   		{  			
+   			"Map restricted to D("+string(phi.dom[k])+"):";
+   			st="     ("+varstr(R)+") -----> ( ";   
+   			for(i=1; i<m; i=i+1)
+   			{
+      			st=st+string(phi.ratFuncs[k][i])+" , ";
+   			}
+   			st=st+string(phi.ratFuncs[k][m])+" )";
+   			st;
+   		}
+		kill k,i,n,m,st,R,S;
+		if(voice<=2)
+		{
+			"Attributes:";
+			PrintAttributes(phi);
+		}
+    }
 }
 
 // Used for comparing chartmaps
@@ -680,7 +1155,7 @@ static proc printScheme(scheme X)
    {
 	  def S=X.cover[i].r_value;
 	  setring S;
-	  if(X.cover[i].value!=1)
+	  if(!isEmpty(X.cover[i]))
 	  {
 		index[i]=counter;
 		counter=counter+1;
@@ -2891,11 +3366,10 @@ EXAMPLE: example dimension; shows an example"
     int d=-1;
     for(int i=1; i<=size(X.cover); i=i+1)
 	{
-	   def S=X.cover[i].in;
-	   setring S;
-	   if(d<dim(std(X.cover[i].value)))
-	   {   d=dim(std(X.cover[i].value));}
-	   kill S;
+		int n=dim(X.cover[i]);
+	   	if(d<n)
+	   	{   d=n;}
+		kill n;
 	}
 	
 	return(d);
@@ -2904,16 +3378,16 @@ example
 {"EXAMPLE:";
 ring R=0,(x,y,z),dp;
 scheme X=makeAffineScheme(x-yz);
-SchemeDimension(X);
+dim(X);
 
 X=makeProjScheme(x);
-SchemeDimension(X);
+dim(X);
 
 X=makeProjScheme(ideal(x,y));
-SchemeDimension(X);
+dim(X);
 
 X=makeProjScheme(ideal(x,y,z));
-SchemeDimension(X);
+dim(X);
 }
 
 
@@ -3311,6 +3785,46 @@ static proc expratFunc(ratFunc r, int n)
    return(rexpn);
 }
 
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+//  Rational Sections
+/////////////////////////////////////////////////////////////////////////////////
+
+proc makeRatSection(def X, list sections)
+{
+	ratSection result;
+	if(typeof(X)!="scheme" || typeof(X)!="iterativeScheme")
+	{   ERROR("First argument must be a scheme!");}
+	else{
+		result.space=X;
+	}
+
+	for(int i=1; i<=size(sections); i=i+1)
+	{
+		if(typeof(sections[i])!="list")
+		{   ERROR("Second input must be list of lists!");}
+		else{
+			if(size(sections[i])!=2)
+			{   ERROR("Second input must be list of lists of length 2!");}
+			else{
+				if(typeof(sections[i][1])!="Ideal" || typeof(sections[i][2])!="ratFunc")
+				{   ERROR("Second input must be list of lists of the form (Ideal,ratFunc)!");}
+				else{
+					if(nvars(sections[i][1].in)!=nvars(X.cover[i].in) || nvars(sections[i][2].in)!=nvars(X.cover[i].in))
+					{   ERROR("Incompatible inputs!");}
+					else{
+						result.sections[i]=sections[i];
+					}
+				}
+			}
+		}
+	}
+	kill i;
+
+	return(result);
+}
 
 
 
@@ -7133,122 +7647,143 @@ isSmooth(L[1]);
 //  Iterative Scheme Stuff
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-proc maps(int n, int m, iterativeScheme X)
-"USAGE: maps(i,j,X); int i,j ,iterativeScheme X
+proc maps(int n, int m, def X)
+"USAGE: maps(i,j,X); int i,j ,scheme/iterativeScheme X
 RETURN: the gluing map from the i-th to the j-th chart
 EXAMPLE: example maps; gives an example"
 {
-	chartmap result,phi,psi;
-   	intvec v=X.cover[n].label;
-   	intvec w=X.cover[m].label;
-	int sv=size(v);
-	int sw=size(w);
-
-	phi.preim=X.cover[n].entry;
-	phi.im=X.cover[n].entry;
-	def S=X.cover[n].entry.in;
-	setring S;
-	phi.dom=ideal(1);
-	phi.ratFuncs[1]=list();
-	for(int i=1; i<=nvars(S); i=i+1)
+	if(typeof(X)=="iterativeScheme")
 	{
-		ratFunc F=var(i);
-		phi.ratFuncs[1][i]=F;
-		kill F;
-	}
-	kill S,i;
-
-	psi.preim=X.cover[m].entry;
-	psi.im=X.cover[m].entry;
-	def S=X.cover[m].entry.in;
-	setring S;
-	psi.dom=ideal(1);
-	psi.ratFuncs[1]=list();
-	for(int i=1; i<=nvars(S); i=i+1)
-	{
-		ratFunc F=var(i);
-		psi.ratFuncs[1][i]=F;
-		kill F;
-	}
-	kill S,i;
-
-	int k=0;
-	int done=0;
-	while((k<sv)&&(k<sw)&&(!done))
-	{
-		if(v[k+1]!=w[k+1])
+		if((n<1)||(n>size(X.cover))||(m<1)||(m>size(X.cover)))
 		{
-			done=1;
+			ERROR("First or second input is out of range");
+		}
+		chartmap result,phi,psi;
+   		intvec v=X.cover[n].label;
+   		intvec w=X.cover[m].label;
+		int sv=size(v);
+		int sw=size(w);
+
+		phi.preim=X.cover[n].entry;
+		phi.im=X.cover[n].entry;
+		def S=X.cover[n].entry.in;
+		setring S;
+		phi.dom=ideal(1);
+		phi.ratFuncs[1]=list();
+		for(int i=1; i<=nvars(S); i=i+1)
+		{
+			ratFunc F=var(i);
+			phi.ratFuncs[1][i]=F;
+			kill F;
+		}
+		kill S,i;
+
+		psi.preim=X.cover[m].entry;
+		psi.im=X.cover[m].entry;
+		def S=X.cover[m].entry.in;
+		setring S;
+		psi.dom=ideal(1);
+		psi.ratFuncs[1]=list();
+		for(int i=1; i<=nvars(S); i=i+1)
+		{
+			ratFunc F=var(i);
+			psi.ratFuncs[1][i]=F;
+			kill F;
+		}
+		kill S,i;
+
+		int k=0;
+		int done=0;
+		while((k<sv)&&(k<sw)&&(!done))
+		{
+			if(v[k+1]!=w[k+1])
+			{
+				done=1;
+			}else{
+				k=k+1;
+				}
+		}
+		kill done;
+
+		int l=sv-1;
+		if(l>=1)
+		{
+			iterativeChart U=X.cover[n];
+			while((l>=k)&&(l>=1))
+			{
+				phi=U.parentmap*phi;
+				l=l-1;
+				if(l>=1)
+				{
+					def V=U.parent;
+					U=V;
+					kill V;
+				}
+			}
+			kill U;
+		}
+		kill l;
+
+		int l=sw-1;
+		if(l>=1)
+		{
+			iterativeChart U=X.cover[m];
+			while((l>=k)&&(l>=1))
+			{
+				psi=psi*U.parentInverseMap;
+				l=l-1;
+				if(l>=1)
+				{
+					def V=U.parent;
+					U=V;
+					kill V;
+				}
+			}
+			kill U;
+		}
+		kill l;
+
+		if(k!=0)
+		{
+			result=psi*phi;
 		}else{
-			k=k+1;
+			int i=v[1];
+			int j=w[1];
+			result=psi*X.maps[i][j]*phi;
+			kill i,j;
 		}
-	}
-	kill done;
 
-	int l=sv-1;
-	if(l>=1)
-	{
-		iterativeChart U=X.cover[n];
-		while((l>=k)&&(l>=1))
+		int i;
+		def S=result.preim.in;
+		setring S;
+		for(k=1; k<=ncols(result.dom); k=k+1)
 		{
-			phi=U.parentmap*phi;
-			l=l-1;
-			if(l>=1)
+			poly p=1;
+			for(i=1; i<=nvars(result.im.in); i=i+1)
 			{
-				def V=U.parent;
-				U=V;
-				kill V;
+				p=lcm(p,result.ratFuncs[k][i].den);
 			}
+			result.dom[k]=p;
+			kill p;
 		}
-		kill U;
-	}
-	kill l;
+		kill i,k,S;
 
-	int l=sw-1;
-	if(l>=1)
+		return(result);
+	}
+
+	if(typeof(X)=="scheme")
 	{
-		iterativeChart U=X.cover[m];
-		while((l>=k)&&(l>=1))
+		if((n<1)||(n>size(X.cover))||(m<1)||(m>size(X.cover)))
 		{
-			psi=psi*U.parentInverseMap;
-			l=l-1;
-			if(l>=1)
-			{
-				def V=U.parent;
-				U=V;
-				kill V;
-			}
+			ERROR("First or second input is out of range");
 		}
-		kill U;
+		return(X.maps[n][m]);
 	}
-	kill l;
 
-	if(k!=0)
+	if(typeof(X)!="scheme" || typeof(X)!="iterativeScheme")
 	{
-		result=psi*phi;
-	}else{
-		int i=v[1];
-		int j=w[1];
-		result=psi*X.maps[i][j]*phi;
-		kill i,j;
+		ERROR("Third input must be a scheme or iterativeScheme");
 	}
-
-	int i;
-	def S=result.preim.in;
-	setring S;
-	for(k=1; k<=ncols(result.dom); k=k+1)
-	{
-		poly p=1;
-		for(i=1; i<=nvars(result.im.in); i=i+1)
-		{
-			p=lcm(p,result.ratFuncs[k][i].den);
-		}
-		result.dom[k]=p;
-		kill p;
-	}
-	kill i,k,S;
-
-	return(result);
 }
 example
 {"EXAMPLE:";

@@ -1,0 +1,16 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+ring R=0,(x,y,z),dp;
+chart U=ideal(x,y);
+U;
+U=ForceStd(U);
+dim(U);
+isEmpty(U);
+chart V=ideal(1);
+V;
+U!=V;
+U==U;

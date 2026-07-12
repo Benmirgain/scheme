@@ -4,6 +4,26 @@ option(noredefine);
 LIB "scheme.lib";
 
 system("--no-out",0);
+"starting AttributeTest.sing";
+system("--no-out",1);
+<"AttributeTest.sing";
+
+system("--no-out",0);
+"starting ChartTest.sing";
+system("--no-out",1);
+<"ChartTest.sing";
+
+system("--no-out",0);
+"starting ChartmapTest.sing";
+system("--no-out",1);
+<"ChartmapTest.sing";
+
+system("--no-out",0);
+"starting SchemeTest.sing";
+system("--no-out",1);
+<"SchemeTest.sing";
+
+system("--no-out",0);
 "starting BlowUpTest.sing";
 system("--no-out",1);
 <"BlowUpTest.sing";
@@ -12,7 +32,6 @@ system("--no-out",0);
 "starting CompleteIntersectionTest.sing";
 system("--no-out",1);
 <"CompleteIntersectionTest.sing";
-
 
 system("--no-out",0);
 "starting ConeDecompTest.sing";

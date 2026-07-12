@@ -1,0 +1,18 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+
+AttribTable T;
+T=SetAttribute(T,"test1",1);
+T=SetAttribute(T,"test2",2);
+isAttribute(T,"test1");
+AttributeList(T);
+T;
+GetAttribute(T,"test1");
+T=RemoveAttribute(T,"test1");
+isAttribute(T,"test1");
+GetAttribute(T,"test1");
+T;

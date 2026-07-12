@@ -1,0 +1,23 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+ring R=0,(a,b,c,d),dp;
+chart U=ideal(ad-bc);
+list L=list(makeratFunc(a,b),makeratFunc(c,d));
+
+ring S=0,(x),dp;
+chart V=ideal(0);
+
+chartmap f=U,V,L;
+f;
+GetImageSpace(f);
+GetPreimageSpace(f);
+
+IdentityMap(U);
+
+chartmap g;
+g;
+
