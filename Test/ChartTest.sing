@@ -15,6 +15,6 @@ V;
 U!=V;
 U==U;
 
-def S=GiveRing(U);
+def S=RingOf(U);
 setring S;
 GiveIdeal(U);

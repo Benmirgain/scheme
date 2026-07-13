@@ -70,7 +70,7 @@ g=subst(g,z(i)(j),1);
 matrix M=coef(g,x(i)*x(j));
 ideal J=M[2,1..ncols(M)];
 
-def T=Fano.cover[n].in;
+def T=RingOf(Fano.cover[n]);
 setring T;
 ideal J=imap(RS,J);
 Fano.cover[n].value=Fano.cover[n].value+J;
@@ -201,11 +201,11 @@ for(m=1; m<=nvars(R); m=m+1)
    if(doElimination)
    {
       chartmap psi=Maps[m][2];
-      def Rnew=psi.im.r_value;
+      def Rnew=RingOf(psi.im);
       setring Rnew;
       ideal CC;
    }else{
-      def Rnew=Fano.cover[m].r_value;
+      def Rnew=RingOf(Fano.cover[m]);
       setring Rnew;
       ideal CC=Fano.cover[m].value;
    }
@@ -214,7 +214,7 @@ for(m=1; m<=nvars(R); m=m+1)
    {
       Ideal IC=ChartmapCompIdeal(psi,CC);
       kill psi;
-      def Rnewnew=Fano.cover[m].r_value;
+      def Rnewnew=RingOf(Fano.cover[m]);
       setring Rnewnew;
       X.cover[m]=makeChart(interred(IC.value+Fano.cover[m].value));
       kill IC;
@@ -234,7 +234,7 @@ for(m=1; m<=nvars(R); m=m+1)
 
    if(doCurveElimination && !isEmpty(X.cover[m]))
    {
-      def T=X.cover[m].in;
+      def T=RingOf(X.cover[m]);
       setring T;
       list eliml=elimpart(X.cover[m].value);
 

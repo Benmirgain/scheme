@@ -182,24 +182,31 @@ static proc mod_init()
 //    Branching Stuff
 ////////////////////////////////////////////////////////////////
 
+static proc RingOfTemplate(def X)
+{
+	return(X.r_value);
+}
 
-proc GiveRing()
-"USAGE: GiveRing(X); chart X
+
+proc RingOf()
+"USAGE: RingOf(X); chart X
 RETURN: the ring of the chart X
-EXAMPLE: example GiveRing; shows an example"
+EXAMPLE: example RingOf; shows an example"
 {
 	branchTo("chart",RingC);
 	branchTo("affVariety",RingAV);
 	branchTo("projVariety",RingPV);
 	branchTo("product",RingP);
 	branchTo("ratFunc",RingRF);
+	branchTo("Poly",RingOfTemplate);
+	branchTo("Ideal",RingOfTemplate);
 	ERROR("Wrong input!");
 }
 example
 {"EXAMPLE:";
 	ring R=0,(x,y,z),dp;
 	chart U=ideal(x+y+1,x+y+z,z);
-	GiveRing(U);
+	RingOf(U);
 }
 
 
@@ -575,7 +582,7 @@ EXAMPLE: example IntersectionNumber; shows an example"
 		{   ERROR("Divisors not in general position!");}
 		for(l=1;l<=size(X.cover);l=l+1)
 	    {
-		    def R=X.cover[l].in;
+		    def R=RingOf(X.cover[l]);
 			setring R;
 			int d=vdim(std(Z.cover[l].value+X.cover[l].value));
 			k=l+1;
@@ -681,7 +688,7 @@ static proc IC(chart C)
 {
 	if(defined(basering))
 	{
-		if(basering!=GiveRing(C))
+		if(basering!=RingOf(C))
 		{
 			ERROR("Chart is not defined in the current ring!");
 		}else{
@@ -695,7 +702,7 @@ static proc IC(chart C)
 // Print routine for chart
 static proc printChart(chart C)
 {
-   	def S=GiveRing(C);
+   	def S=RingOf(C);
    	setring S;
 	if(!isEmpty(C))
    	{
@@ -719,7 +726,7 @@ static proc ForceStdC(chart C)
 		{
 			return(C);
 		}else{
-			def R=C.r_value;
+			def R=RingOf(C);
 			setring R;
 			C.value=std(C.value);
 			C=SetAttribute(C,"isSB",1);
@@ -727,7 +734,7 @@ static proc ForceStdC(chart C)
 			return(C);
 		}
 	}else{
-		def R=C.r_value;
+		def R=RingOf(C);
 		setring R;
 		C.value=std(C.value);
 		C=SetAttribute(C,"isSB",1);
@@ -742,7 +749,7 @@ static proc isEmptyC(chart C)
 	{
 		return(Attribute(C,"isEmpty"));
 	}else{
-		def R=C.r_value;
+		def R=RingOf(C);
 		setring R;
 		if(isAttribute(C,"isSB"))
 		{
@@ -787,7 +794,7 @@ static proc ChartDimension(chart C)
 	{
 		return(Attribute(C,"dimension"));
 	}else{
-		def R=C.r_value;
+		def R=RingOf(C);
 		setring R;
 		C=ForceStdC(C);
 		int d=dim(C.value);
@@ -799,12 +806,12 @@ static proc ChartDimension(chart C)
 // For comparing charts
 static proc equalChart(chart U, chart V)
 {
-	if(charstr(GiveRing(U))!=charstr(GiveRing(V)))
+	if(charstr(RingOf(U))!=charstr(RingOf(V)))
    	{
 		return(0);
    	}
 
-   	if(nvars(GiveRing(U))!=nvars(GiveRing(V)))
+   	if(nvars(RingOf(U))!=nvars(RingOf(V)))
    	{
     	return(0);
    	}
@@ -812,8 +819,8 @@ static proc equalChart(chart U, chart V)
 	U=ForceStd(U);
 	V=ForceStd(V);
 
-	def R=U.r_value;
-	def S=V.r_value;
+	def R=RingOf(U);
+	def S=RingOf(V);
 
 	setring S;
 	ideal JS=V.value;
@@ -865,8 +872,8 @@ EXAMPLE: example makeChartmap; creates an example"
    int i,j;
    intvec iv;
    
-   def S=Preim.in;
-   def SS=Im.in;
+   def S=RingOf(Preim);
+   def SS=RingOf(Im);
    
    setring S;
    ideal Dom;
@@ -984,7 +991,7 @@ psi==phi;
 
 static proc IdentityMapC(chart C)
 {
-   def R=C.r_value;
+   def R=RingOf(C);
    setring R;
    list RatFuncs;
    for(int i=1; i<=nvars(R); i=i+1)
@@ -1005,7 +1012,7 @@ static proc isEmptyCM(chartmap phi)
 	{
 		return(Attribute(phi,"isEmpty"));
 	}else{
-		def R=phi.r_dom;
+		def R=RingOf(PreimageSpace(phi));
 		setring R;
 		if(size(phi.dom)==0)
 		{
@@ -1035,8 +1042,8 @@ static proc printChartmap(chartmap phi)
 	{
 		"Empty Chartmap";
 	}else{
-   		def R=phi.preim.r_value;
-   		def S=phi.im.r_value;
+   		def R=RingOf(phi.preim);
+   		def S=RingOf(phi.im);
    		int i,k;
 
    		setring R;
@@ -1076,7 +1083,7 @@ static proc equalChartmap(chartmap phi, chartmap psi)
       return(0);
    }
    
-   def S=GiveRing(phi.preim);
+   def S=RingOf(phi.preim);
    setring S;
    
    if(size(phi.dom)!=size(psi.dom))
@@ -1118,11 +1125,11 @@ static proc notequalChartmap(chartmap phi, chartmap psi)
 
 static proc equalAffVariety(affVariety X, affVariety Y)
 {
-	if(GiveRing(X)!=GiveRing(Y))
+	if(RingOf(X)!=RingOf(Y))
 	{
 		return(0);
 	}
-	def R=GiveRing(X);
+	def R=RingOf(X);
 	setring R;
 	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
 	{
@@ -1141,11 +1148,11 @@ static proc notequalAffVariety(affVariety X, affVariety Y)
 
 static proc equalProjVariety(projVariety X, projVariety Y)
 {
-	if(GiveRing(X)!=GiveRing(Y))
+	if(RingOf(X)!=RingOf(Y))
 	{
 		return(0);
 	}
-	def R=GiveRing(X);
+	def R=RingOf(X);
 	setring R;
 	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
 	{
@@ -1209,7 +1216,7 @@ static proc printScheme(scheme X)
    int counter=1;
    for(i=1; i<=size(X.cover); i=i+1)
    {
-	  def S=X.cover[i].r_value;
+	  def S=RingOf(X.cover[i]);
 	  setring S;
 	  if(!isEmpty(X.cover[i]))
 	  {
@@ -1236,8 +1243,8 @@ static proc printScheme(scheme X)
 	     "Map Chart "+string(index[i])+" -> Chart "+string(index[j])+":";
 		 
 	     phi=X.maps[i][j];
-         def T=GiveRing(phi.preim);
-         def S=GiveRing(phi.im);
+         def T=RingOf(phi.preim);
+         def S=RingOf(phi.im);
          
 		 setring T;
 		 "Domain: D("+string(phi.dom)+")";  
@@ -1276,7 +1283,7 @@ EXAMPLE: example ChartToScheme; creates an example"
 	scheme result;
 	
 	result.cover[1]=U;
-	def S=GiveRing(U);
+	def S=RingOf(U);
 	setring S;
 	
 	list L;
@@ -1455,7 +1462,7 @@ proc makeProduct(list #)
 
 	if((typeof(L[1])=="affVariety")||(typeof(L[1])=="projVariety")||(typeof(L[1])=="product"))
 	{
-	def R=L[1].in;
+	def R=RingOf(L[1]);
 	setring R;
 	ideal I=L[1].value;
 	list grad;
@@ -1481,7 +1488,7 @@ proc makeProduct(list #)
 	}
 	for(i=2; i<=size(L); i=i+1)
 	{
-		def S=L[i].in;
+		def S=RingOf(L[i]);
 		setring S;
 		ideal J=L[i].value;
 		intvec iv=0:nvars(R);
@@ -1558,7 +1565,7 @@ static proc RingP(product V)
 
 proc printAffVariety(affVariety X)
 {
-	def R=GiveRing(X);
+	def R=RingOf(X);
 	setring R;
     "ring = "+string(R);
     "quotient = "+string(X.value);
@@ -1569,7 +1576,7 @@ proc printAffVariety(affVariety X)
 
 proc printProjVariety(projVariety X)
 {
-	def R=GiveRing(X);
+	def R=RingOf(X);
 	setring R;
     "ring = "+string(R);
     "quotient = "+string(X.value);
@@ -1580,8 +1587,8 @@ proc printProjVariety(projVariety X)
 
 proc printAffRatMap(affRatMap phi)
 {
-	def R=GiveRing(phi.preim);
-	def S=GiveRing(phi.im);
+	def R=RingOf(phi.preim);
+	def S=RingOf(phi.im);
     int i,k;
 
     setring R;
@@ -1613,8 +1620,8 @@ proc printAffRatMap(affRatMap phi)
 
 proc printProjRatMap(projRatMap phi)
 {
-	def R=GiveRing(phi.preim);
-	def S=GiveRing(phi.im);
+	def R=RingOf(phi.preim);
+	def S=RingOf(phi.im);
     int i,k;
 
     setring R;
@@ -1683,7 +1690,7 @@ EXAMPLE: example makeAffineScheme; shows an example"
 	{
 	scheme X=#[1];
 	def R=basering;
-	def S=X.cover[1].in;
+	def S=RingOf(X.cover[1]);
 	if((nvars(R)!=nvars(S))||(size(X.cover)!=1))
 	{   ERROR("Inputs not compatible");}
 	
@@ -1785,7 +1792,7 @@ EXAMPLE: example makeProjScheme; shows an example"
 	      Preim=result.cover[i];
 		  Im=result.cover[j];
 		  
-		  S=Preim.in;
+		  S=RingOf(Preim);
 		  setring S;
 		  L=list();
 		  for(k=1;k<=n;k=k+1)
@@ -1839,7 +1846,7 @@ EXAMPLE: example makeProjScheme; shows an example"
 	int i,j;
 	for(i=1;i<=n;i=i+1)
 	{
-	   S=X.cover[i].in;
+	   S=RingOf(X.cover[i]);
 	   if(nvars(S)!=n-1)
 	   {   ERROR("Inputs are incompatible");}
 	   
@@ -2172,7 +2179,7 @@ EXAMPLE: example makeWeightProjScheme; shows an example"
 			chart Preim=result.cover[i];
 			chart Im=result.cover[j];
 			
-			def SPreim=Preim.in;
+			def SPreim=RingOf(Preim);
 			setring SPreim;
 
 			intmat NPreim=LHilbert[i];
@@ -2516,7 +2523,7 @@ EXAMPLE: example makeToricVariety; shows an example"
 				MaxCones[size(MaxCones)+1]=C;
 				result.cover[size(result.cover)+1]=makeToricVariety(C,1);
 
-				def R=result.cover[size(result.cover)].in;
+				def R=RingOf(result.cover[size(result.cover)]);
 				intmat M[nvars(R)][ambientDimension(T)];
 				int k,l,m,n;
 				for(k=1; k<=nvars(R); k=k+1)
@@ -2576,9 +2583,9 @@ EXAMPLE: example makeToricVariety; shows an example"
 				list ratFuncs;
 				
 				chart V=makeToricVariety(convexIntersection(MaxCones[i],MaxCones[j]),1);
-				def Ri=result.cover[i].in;
-				def Rj=result.cover[j].in;
-				def RV=GiveRing(V);
+				def Ri=RingOf(result.cover[i]);
+				def Rj=RingOf(result.cover[j]);
+				def RV=RingOf(V);
 
 				intmat Mi=HB[i];
 				intmat Mj=HB[j];
@@ -3029,7 +3036,7 @@ EXAMPLE: example Grassmanian; shows an example"
 	{
 		for(i=1; i<=size(G.cover); i=i+1)
 		{
-			def S=G.cover[i].in;
+			def S=RingOf(G.cover[i]);
 			setring S;
 			ideal I=G.cover[i].value;
 			s="ideal V="+varstr(S)+";";
@@ -3125,8 +3132,8 @@ EXAMPLE: example FibreProduct; shows an example"
    {
    for(j=1; j<=size(Y.cover); j=j+1)
    {
-      def Sx=X.cover[i].in;
-	  def Sy=Y.cover[j].in;
+      def Sx=RingOf(X.cover[i]);
+	  def Sy=RingOf(Y.cover[j]);
 	  def S=ringtensor(Sx,Sy);
 	  setring S;
 	  
@@ -3178,9 +3185,9 @@ EXAMPLE: example FibreProduct; shows an example"
 	  Ypartmaps=list();
 	  Partmaps=list();
 	  
-	  def Sx=X.cover[i].in;
-	  def Sy=Y.cover[j].in;
-	  def S=result.cover[(i-1)*size(Y.cover)+j].in;
+	  def Sx=RingOf(X.cover[i]);
+	  def Sy=RingOf(Y.cover[j]);
+	  def S=RingOf(result.cover[(i-1)*size(Y.cover)+j]);
 	  setring S;
 	  
 	  ideal Xvars,Yvars,Dom;
@@ -3291,10 +3298,10 @@ EXAMPLE: example intersection; shows an example"
    int i,j;
    for(i=1; i<=size(X.cover); i=i+1)
    {
-      if(X.cover[i].in!=Y.cover[i].in)
+      if(RingOf(X.cover[i])!=RingOf(Y.cover[i]))
       {   ERROR("Inputs not compatible");}
 	  
-	  def S=X.cover[i].in;
+	  def S=RingOf(X.cover[i]);
 	  setring S;
 	  chart U=X.cover[i].value+Y.cover[i].value;
 	  result.cover[i]=U;
@@ -3341,10 +3348,10 @@ EXAMPLE: example union; shows an example"
    int i,j;
    for(i=1; i<=size(X.cover); i=i+1)
    {
-      if(X.cover[i].in!=Y.cover[i].in)
+      if(RingOf(X.cover[i])!=RingOf(Y.cover[i]))
       {   ERROR("Inputs not compatible");}
 	  
-	  def S=X.cover[i].in;
+	  def S=RingOf(X.cover[i]);
 	  setring S;
 	  chart U=intersect(X.cover[i].value,Y.cover[i].value);
 	  result.cover[i]=U;
@@ -3387,7 +3394,7 @@ EXAMPLE: example ReducedScheme; shows an example"
    int i,j;
    for(i=1; i<=size(X.cover); i=i+1)
    {
-      def S=X.cover[i].in;
+      def S=RingOf(X.cover[i]);
 	  setring S;
 	  chart U=radical(X.cover[i].value);
 	  result.cover[i]=U;
@@ -3478,7 +3485,7 @@ EXAMPLE: example IrredDec; shows an example"
 	int i,j,k,t;
 	for(i=1; i<=size(X.cover); i=i+1)
 	{
-	   def S=X.cover[i].in;
+	   def S=RingOf(X.cover[i]);
 	   setring S;
 	   list L=primdecGTZ(X.cover[i].value);
 	   for(j=1; j<=size(L); j=j+1)
@@ -3505,7 +3512,7 @@ EXAMPLE: example IrredDec; shows an example"
 			 {
 			    Ideal QQ,PP;
 				chart CQ,CP;
-				def T=X.cover[k].in;
+				def T=RingOf(X.cover[k]);
 				setring T;
 				QQ=ChartmapCompIdeal(X.maps[k][i],Q);
 				PP=ChartmapCompIdeal(X.maps[k][i],P);
@@ -3556,7 +3563,7 @@ EXAMPLE: example isReduced; shows an example"
 {
    for(int i=1; i<=size(X.cover); i=i+1)
    {
-      def S=X.cover[i].in;
+      def S=RingOf(X.cover[i]);
 	  setring S;
 	  if(std(quotient(X.cover[i].value,radical(X.cover[i].value)))!=1)
 	  { 
@@ -3754,13 +3761,13 @@ F==H;
 
 static proc RingRF(ratFunc F)
 {
-	return(F.r_den);
+	return(F.r_num);
 }
 
 // Print routine for ratFunc
 static proc printratFunc(ratFunc r)
 {
-   def S=GiveRing(r);
+   def S=RingOf(r);
    setring S;
    if(r.den==1)
    {
@@ -3774,7 +3781,7 @@ static proc printratFunc(ratFunc r)
 // Gives ratFunc as a string
 static proc stringratFunc(ratFunc r)
 {
-   def S=r.in;
+   def S=RingOf(r);
    setring S;
    if(r.den==1)
    {
@@ -3789,7 +3796,7 @@ static proc stringratFunc(ratFunc r)
 // Used for comparing ratFuncs
 static proc equalratFunc(ratFunc r, ratFunc q)
 {
-   def SS=r.in;
+   def SS=RingOf(r);
    setring SS;
    int requalq = (r.num*q.den)==(r.den*q.num);
    return(requalq);
@@ -3806,7 +3813,7 @@ static proc notequalratFunc(ratFunc F, ratFunc G)
 // Multiplication of ratFuncs
 static proc multratFunc(ratFunc r, ratFunc q)
 {
-   def SS=r.in;
+   def SS=RingOf(r);
    setring SS;
    ratFunc rtimesq = r.num*q.num, r.den*q.den;
    return(rtimesq);
@@ -3816,7 +3823,7 @@ static proc multratFunc(ratFunc r, ratFunc q)
 // Division of ratFuncs
 static proc divideratFunc(ratFunc r, ratFunc q)
 {
-   def SS=r.in;
+   def SS=RingOf(r);
    setring SS;
    ratFunc zero=0,1;
    if(q==zero)
@@ -3829,7 +3836,7 @@ static proc divideratFunc(ratFunc r, ratFunc q)
 // Addition of ratFuncs
 static proc addratFunc(ratFunc r, ratFunc q)
 {
-   def SS=r.in;
+   def SS=RingOf(r);
    setring SS;
    ratFunc rplusq = r.num*q.den+r.den*q.num, r.den*q.den;
    return(rplusq);
@@ -3839,7 +3846,7 @@ static proc addratFunc(ratFunc r, ratFunc q)
 // Substraction of ratFuncs
 static proc subratFunc(ratFunc r, ratFunc q)
 {
-   def SS=r.in;
+   def SS=RingOf(r);
    setring SS;
    ratFunc rminusq = r.num*q.den-r.den*q.num, r.den*q.den;
    return(rminusq);
@@ -3849,7 +3856,7 @@ static proc subratFunc(ratFunc r, ratFunc q)
 // Exponents of ratFuncs
 static proc expratFunc(ratFunc r, int n)
 {
-   def SS=r.in;
+   def SS=RingOf(r);
    setring SS;
    ratFunc zero=0,1;
    ratFunc rexpn;
@@ -3891,7 +3898,7 @@ proc makeRatSection(def X, list sections)
 				if(typeof(sections[i][1])!="Ideal" || typeof(sections[i][2])!="ratFunc")
 				{   ERROR("Second input must be list of lists of the form (Ideal,ratFunc)!");}
 				else{
-					if(nvars(sections[i][1].in)!=nvars(X.cover[i].in) || nvars(sections[i][2].in)!=nvars(X.cover[i].in))
+					if(nvars(RingOf(sections[i][1]))!=nvars(RingOf(X.cover[i])) || nvars(RingOf(sections[i][2]))!=nvars(RingOf(X.cover[i])))
 					{   ERROR("Incompatible inputs!");}
 					else{
 						result.sections[i]=sections[i];
@@ -3918,7 +3925,7 @@ ASSUME: r_1,...,r_n belong to the same ring and n=nvars(F.in)
 RETURN: F(r_1,...,r_n)
 EXAMPLE: example PolyCompratFunc; creates an example"
 {
-   def S=F.in;
+   def S=RingOf(F);
    setring S;
    poly Fp=F.value;
    int n=size(#);
@@ -3939,7 +3946,7 @@ EXAMPLE: example PolyCompratFunc; creates an example"
    
    if(typeof(#[1])!="ratFunc")
    {   ERROR("Arguments after first need to be of type ratFunc!");}
-   def SS=#[1].in;
+   def SS=RingOf(#[1]);
    setring SS;
    poly g=1;
    for(k=1; k<=n; k=k+1)
@@ -3947,9 +3954,9 @@ EXAMPLE: example PolyCompratFunc; creates an example"
 	    if(typeof(#[k])!="ratFunc")
    		{   ERROR("Arguments after first need to be of type ratFunc!");}
 
-	   if(SS!=#[k].r_num)
+	   if(SS!=RingOf(#[k]))
 	   {
-		    def T=#[k].r_num;
+		    def T=RingOf(#[k]);
 			if((nvars(SS)==nvars(T)) && (char(SS)==char(T)))
 			{
 				setring T;
@@ -3963,9 +3970,9 @@ EXAMPLE: example PolyCompratFunc; creates an example"
 			kill T;
 	   }
 
-	   if(SS!=#[k].r_den)
+	   if(SS!=RingOf(#[k]))
 	   {
-		    def T=#[k].r_den;
+		    def T=RingOf(#[k]);
 			if((nvars(SS)==nvars(T)) && (char(SS)==char(T)))
 			{
 				setring T;
@@ -4014,7 +4021,7 @@ ASSUME: r_1,...,r_n belong to the same ring and n=nvars(F.in)
 RETURN: F(r_1,...,r_n)
 EXAMPLE: example ratFuncCompratFunc; creates an example"
 {
-   def S=r.in;
+   def S=RingOf(r);
    setring S;
    if(size(#)!=nvars(S))
    {   ERROR("Wrong number of arguments!!!");}
@@ -4038,12 +4045,12 @@ G;
 
 proc ChartmapCompIdeal(chartmap phi, Ideal I)
 "USAGE: ChartmapCompIdeal(phi,I); phi chartmap, I ideal
-ASSUME: I.in=GiveRing(phi.im)
+ASSUME: I.in=RingOf(phi.im)
 RETURN: Ideal defining the inverse image under phi of the closed subscheme defined by I
 EXAMPLE: example ChartmapCompIdeal; creates an example"
 {
-   def S=GiveRing(phi.preim);
-   def SS=GiveRing(phi.im);
+   def S=RingOf(phi.preim);
+   def SS=RingOf(phi.im);
    setring SS;
    int m=size(phi.ratFuncs);
    int n=size(I.value);
@@ -4113,11 +4120,11 @@ J;
 
 proc ChartmapCompChartmap(chartmap phi, chartmap psi)
 {
-   if(nvars(GiveRing(phi.preim))!=nvars(GiveRing(psi.im)))      //to do: better compatability test
+   if(nvars(RingOf(phi.preim))!=nvars(RingOf(psi.im)))      //to do: better compatability test
    {   ERROR("Chartmaps not compatible");}
    
-   def S=GiveRing(psi.preim);
-   def SS=GiveRing(phi.preim);
+   def S=RingOf(psi.preim);
+   def SS=RingOf(phi.preim);
    list Maps;
    int i,j,k;
    ratFunc G,F;
@@ -4133,7 +4140,7 @@ proc ChartmapCompChartmap(chartmap phi, chartmap psi)
          F=ratFuncCompratFunc(G,psi.ratFuncs[i]);
          setring S;
          Dom[l]=lcm(F.num,psi.dom[i]);
-         for(k=1; k<=nvars(GiveRing(phi.im)); k=k+1)
+         for(k=1; k<=nvars(RingOf(phi.im)); k=k+1)
          {
             Maps=Maps+list(ratFuncCompratFunc(phi.ratFuncs[j][k],psi.ratFuncs[i]));
          }
@@ -4179,8 +4186,8 @@ RETURN: Ideal J that, if no additional input given, represents the image of phi,
         otherwise it represents the image of V(I) under phi
 EXAMPLE: example chartmapImage; gives an example"
 {
-   def R=GiveRing(phi.preim);
-   def S=GiveRing(phi.im);
+   def R=RingOf(phi.preim);
+   def S=RingOf(phi.im);
    Ideal result;
    int i,j,n,m,e,c;
    n=nvars(R);
@@ -4195,7 +4202,7 @@ EXAMPLE: example chartmapImage; gives an example"
    }else{
    if((size(#)==1)&&(typeof(#[1])=="Ideal"))
    {
-      if(#[1].in!=R)
+      if(RingOf(#[1])!=R)
 	  {   ERROR(Rings incompatible!)}
 	  A=A+#[1].value;
    }}
@@ -4320,7 +4327,7 @@ EXAMPLE: example makeMorphism; gives an example"
 		 phi.preim=Preim.cover[i];
 		 phi.im=Im.cover[j];
 		 
-		 def S=Preim.cover[i].in;
+		 def S=RingOf(Preim.cover[i]);
 		 setring S;
 		 phi.dom=ideal(0);
 		 
@@ -4347,7 +4354,7 @@ scheme X=makeProjScheme(xz-y2);
 ring S=0,(a,b),dp;
 scheme Y=makeProjScheme(0);
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Ideal Dom=1;
 ratFunc F=y;
@@ -4355,7 +4362,7 @@ chartmap phi=X.cover[1],Y.cover[1],Dom,F;
 list L=list(list(phi,1,1));
 kill T;
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Dom=y;
 F=1,y;
@@ -4363,7 +4370,7 @@ phi=X.cover[1],Y.cover[2],Dom,F;
 L=L+list(list(phi,1,2));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=1;
 F=z;
@@ -4371,7 +4378,7 @@ phi=X.cover[2],Y.cover[1],Dom,F;
 L=L+list(list(phi,2,1));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=1;
 F=x;
@@ -4379,7 +4386,7 @@ phi=X.cover[2],Y.cover[2],Dom,F;
 L=L+list(list(phi,2,2));
 kill T;
 
-def T=X.cover[3].in;
+def T=RingOf(X.cover[3]);
 setring T;
 Dom=x;
 F=y,x;
@@ -4387,7 +4394,7 @@ phi=X.cover[3],Y.cover[1],Dom,F;
 L=L+list(list(phi,3,1));
 kill T;
 
-def T=X.cover[3].in;
+def T=RingOf(X.cover[3]);
 setring T;
 Dom=1;
 F=y;
@@ -4428,7 +4435,7 @@ EXAMPLE: example MorphismCompMorphism; gives an example"
 		 f.preim=psi.preim.cover[i];
 		 f.im=phi.im.cover[j];
 		 
-		 def S=psi.preim.cover[i].in;
+		 def S=RingOf(psi.preim.cover[i]);
 		 setring S;
 		 f.dom=ideal(0);
 		 
@@ -4499,7 +4506,7 @@ scheme X=makeProjScheme(xz-y2);
 ring S=0,(a,b),dp;
 scheme Y=makeProjScheme(0);
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Ideal Dom=1;
 ratFunc F=y;
@@ -4507,7 +4514,7 @@ chartmap f=X.cover[1],Y.cover[1],Dom,F;
 list L=list(list(f,1,1));
 kill T;
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Dom=y;
 F=1,y;
@@ -4515,7 +4522,7 @@ f=X.cover[1],Y.cover[2],Dom,F;
 L=L+list(list(f,1,2));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=1;
 F=z;
@@ -4523,7 +4530,7 @@ f=X.cover[2],Y.cover[1],Dom,F;
 L=L+list(list(f,2,1));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=1;
 F=x;
@@ -4531,7 +4538,7 @@ f=X.cover[2],Y.cover[2],Dom,F;
 L=L+list(list(f,2,2));
 kill T;
 
-def T=X.cover[3].in;
+def T=RingOf(X.cover[3]);
 setring T;
 Dom=x;
 F=y,x;
@@ -4539,7 +4546,7 @@ f=X.cover[3],Y.cover[1],Dom,F;
 L=L+list(list(f,3,1));
 kill T;
 
-def T=X.cover[3].in;
+def T=RingOf(X.cover[3]);
 setring T;
 Dom=1;
 F=y;
@@ -4550,7 +4557,7 @@ morphism phi=X,Y,L;
 kill T;
 
 
-def T=Y.cover[1].in;
+def T=RingOf(Y.cover[1]);
 setring T;
 Dom=1;
 F=b;
@@ -4559,7 +4566,7 @@ f=Y.cover[1],X.cover[1],Dom,F,G;
 L=list(list(f,1,1));
 kill T;
 
-def T=Y.cover[1].in;
+def T=RingOf(Y.cover[1]);
 setring T;
 Dom=b;
 F=1,b;
@@ -4568,7 +4575,7 @@ f=Y.cover[1],X.cover[2],Dom,F,G;
 L=L+list(list(f,1,2));
 kill T;
 
-def T=Y.cover[1].in;
+def T=RingOf(Y.cover[1]);
 setring T;
 Dom=b;
 F=1,b2;
@@ -4577,7 +4584,7 @@ f=Y.cover[1],X.cover[3],Dom,F,G;
 L=L+list(list(f,1,3));
 kill T;
 
-def T=Y.cover[2].in;
+def T=RingOf(Y.cover[2]);
 setring T;
 Dom=a;
 F=1,a;
@@ -4586,7 +4593,7 @@ f=Y.cover[2],X.cover[1],Dom,F,G;
 L=L+list(list(f,2,1));
 kill T;
 
-def T=Y.cover[2].in;
+def T=RingOf(Y.cover[2]);
 setring T;
 Dom=a;
 F=a;
@@ -4595,7 +4602,7 @@ f=Y.cover[2],X.cover[2],Dom,F,G;
 L=L+list(list(f,2,2));
 kill T;
 
-def T=Y.cover[2].in;
+def T=RingOf(Y.cover[2]);
 setring T;
 Dom=1;
 F=a2;
@@ -4618,7 +4625,7 @@ proc isSameMap(def phi, def psi)
 	{
 		return(0);
 	}
-	def R=GiveRing(phi.preim);
+	def R=RingOf(phi.preim);
 	setring R;
 	poly p;
 	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
@@ -4638,7 +4645,7 @@ proc isSameMap(def phi, def psi)
 	{
 		return(0);
 	}
-	def R=GiveRing(phi.preim);
+	def R=RingOf(phi.preim);
 	setring R;
 	int n=size(phi.ratFuncs);
 	matrix M[2][n];
@@ -4686,8 +4693,8 @@ proc affRatMapCompaffRatMap(affRatMap phi, affRatMap psi)
 
 proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
 {
-	def R=GiveRing(psi.preim);
-	def S=GiveRing(psi.im);
+	def R=RingOf(psi.preim);
+	def S=RingOf(psi.im);
 	projRatMap result;
 	result.preim=psi.preim;
 	result.im=phi.im;
@@ -4789,9 +4796,9 @@ proc Domain(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-		def S=GiveRing(phi.preim);
+		def S=RingOf(phi.preim);
 		setring S;
-		int n=nvars(GiveRing(phi.im));
+		int n=nvars(RingOf(phi.im));
 		Ideal Dom=ideal(1);
 		ideal I=phi.preim.value;
 
@@ -4809,9 +4816,9 @@ proc Domain(def phi)
 	}else{
 	if(typeof(phi)=="projRatMap")
 	{
-		def S=GiveRing(phi.preim);
+		def S=RingOf(phi.preim);
 		setring S;
-		int n=nvars(GiveRing(phi.im));
+		int n=nvars(RingOf(phi.im));
 		int m=nvars(S);
 		int i;
 		Ideal Dom=ideal(0);
@@ -4854,13 +4861,13 @@ EXAMPLE: example InvImage; gives an example"
    int i,j;
    for(i=1; i<=size(phi.preim.cover); i=i+1)
    {
-      def S=phi.preim.cover[i].in;
+      def S=RingOf(phi.preim.cover[i]);
 	  setring S;
 	  ideal I=1;
 	  Ideal J;
       for(j=1; j<=size(phi.im.cover); j=j+1)
       {
-	     def T=phi.im.cover[j].in;
+	     def T=RingOf(phi.im.cover[j]);
 		 setring S;
 		 if(std(phi.chartmaps[i][j].dom)!=0)
 		 {
@@ -4897,8 +4904,8 @@ EXAMPLE: example InvImage; gives an example"
 
    if((typeof(X)=="affVariety")&&(typeof(phi)=="affRatMap"))
    {
-	def R=GiveRing(phi.preim);
-	def S=GiveRing(phi.im);
+	def R=RingOf(phi.preim);
+	def S=RingOf(phi.im);
 
 	setring S;
 	int i;
@@ -4926,8 +4933,8 @@ EXAMPLE: example InvImage; gives an example"
 
    if((typeof(X)=="projVariety")&&(typeof(phi)=="projRatMap"))
    {
-	def R=GiveRing(phi.preim);
-	def S=GiveRing(phi.im);
+	def R=RingOf(phi.preim);
+	def S=RingOf(phi.im);
 	int i;
 
 	setring S;
@@ -4959,7 +4966,7 @@ scheme X=makeProjScheme(xz-y2);
 ring S=0,(a,b),dp;
 scheme Y=makeProjScheme(0);
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Ideal Dom=1;
 ratFunc F=y;
@@ -4967,7 +4974,7 @@ chartmap f=X.cover[1],Y.cover[1],Dom,F;
 list L=list(list(f,1,1));
 kill T;
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Dom=y;
 F=1,y;
@@ -4975,7 +4982,7 @@ f=X.cover[1],Y.cover[2],Dom,F;
 L=L+list(list(f,1,2));
 kill T;
 
-def T=X.cover[2].in;
+def RingOf(T=X.cover[2]);
 setring T;
 Dom=1;
 F=z;
@@ -4983,7 +4990,7 @@ f=X.cover[2],Y.cover[1],Dom,F;
 L=L+list(list(f,2,1));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=1;
 F=x;
@@ -4991,7 +4998,7 @@ f=X.cover[2],Y.cover[2],Dom,F;
 L=L+list(list(f,2,2));
 kill T;
 
-def T=X.cover[3].in;
+def T=RingOf(X.cover[3]);
 setring T;
 Dom=x;
 F=y,x;
@@ -4999,7 +5006,7 @@ f=X.cover[3],Y.cover[1],Dom,F;
 L=L+list(list(f,3,1));
 kill T;
 
-def T=X.cover[3].in;
+def T=RingOf(X.cover[3]);
 setring T;
 Dom=1;
 F=y;
@@ -5021,11 +5028,11 @@ proc Graph(def phi)
 	if(typeof(phi)=="affRatMap")
 	{
 		product result=makeProduct(phi.preim,phi.im);
-		def S=GiveRing(phi.preim);
+		def S=RingOf(phi.preim);
 		int n=nvars(S);
 		int i;
 
-		def R=result.in;
+		def R=RingOf(result);
 		setring R;
 		ideal I;
 
@@ -5057,11 +5064,11 @@ proc Graph(def phi)
 	if(typeof(phi)=="projRatMap")
 	{
 		product result=makeProduct(phi.preim,phi.im);
-		def S=GiveRing(phi.preim);
+		def S=RingOf(phi.preim);
 		int n=nvars(S);
 		int i,j;
 
-		def R=result.in;
+		def R=RingOf(result);
 		setring R;
 		ideal I;
 
@@ -5111,7 +5118,7 @@ EXAMPLE: example Image; gives an example"
    {
       for(j=1; j<=size(phi.im.cover); j=j+1)
 	  {
-	     def R=phi.im.cover[j].in;
+	     def R=RingOf(phi.im.cover[j]);
 		 setring R;
 		 ideal I=ideal(1);
 		 Ideal J;
@@ -5133,14 +5140,14 @@ EXAMPLE: example Image; gives an example"
    {
       for(j=1; j<=size(phi.im.cover); j=j+1)
 	  {
-	     def R=phi.im.cover[j].in;
+	     def R=RingOf(phi.im.cover[j]);
 		 setring R;
 		 ideal I=ideal(1);
 		 Ideal J;
 		 
 		 for(i=1; i<=size(phi.preim.cover); i=i+1)
 	     {
-		    def S=phi.preim.cover[i].in;
+		    def S=RingOf(phi.preim.cover[i]);
 			setring S;
 			
 		    J=chartmapImage(phi.chartmaps[i][j],#[1].cover[i].value);
@@ -5164,8 +5171,8 @@ EXAMPLE: example Image; gives an example"
    }else{
    if(typeof(phi)=="affRatMap")
    {
-      def R=GiveRing(phi.preim);
-      def S=GiveRing(phi.im);
+      def R=RingOf(phi.preim);
+      def S=RingOf(phi.im);
       affVariety result;
       int i,j,n,m,e,c;
       n=nvars(R);
@@ -5263,8 +5270,8 @@ EXAMPLE: example Image; gives an example"
    }else{
    if(typeof(phi)=="projRatMap")
    {
-      def R=GiveRing(phi.preim);
-      def S=GiveRing(phi.im);
+      def R=RingOf(phi.preim);
+      def S=RingOf(phi.im);
       projVariety result;
       int i,j,n,m,e,c;
       n=nvars(R);
@@ -5363,7 +5370,7 @@ scheme Z=makeProjScheme(ideal(x-2y),X);
 ring S=0,(a,b,c,d),dp;
 scheme Y=makeProjScheme(0);
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Ideal Dom=1;
 ratFunc F1=y;
@@ -5373,7 +5380,7 @@ chartmap f=X.cover[1],Y.cover[1],Dom,F1,F2,F3;
 list L=list(list(f,1,1));
 kill T;
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Dom=y;
 F1=1,y;
@@ -5383,7 +5390,7 @@ f=X.cover[1],Y.cover[2],Dom,F1,F2,F3;
 L=L+list(list(f,1,2));
 kill T;
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Dom=y;
 F1=1,y2;
@@ -5393,7 +5400,7 @@ f=X.cover[1],Y.cover[3],Dom,F1,F2,F3;
 L=L+list(list(f,1,3));
 kill T;
 
-def T=X.cover[1].in;
+def T=RingOf(X.cover[1]);
 setring T;
 Dom=y;
 F1=1,y3;
@@ -5403,7 +5410,7 @@ f=X.cover[1],Y.cover[4],Dom,F1,F2,F3;
 L=L+list(list(f,1,4));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=x;
 F1=1,x;
@@ -5413,7 +5420,7 @@ f=X.cover[2],Y.cover[1],Dom,F1,F2,F3;
 L=L+list(list(f,2,1));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=x;
 F1=x;
@@ -5423,7 +5430,7 @@ f=X.cover[2],Y.cover[2],Dom,F1,F2,F3;
 L=L+list(list(f,2,2));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=x;
 F1=x2;
@@ -5433,7 +5440,7 @@ f=X.cover[2],Y.cover[3],Dom,F1,F2,F3;
 L=L+list(list(f,2,3));
 kill T;
 
-def T=X.cover[2].in;
+def T=RingOf(X.cover[2]);
 setring T;
 Dom=1;
 F1=x3;
@@ -5456,8 +5463,8 @@ proc Inverse(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-      def R=GiveRing(phi.preim);
-      def S=GiveRing(phi.im);
+      def R=RingOf(phi.preim);
+      def S=RingOf(phi.im);
       affRatMap result;
 	  result.im=phi.preim;
 	  result.preim=phi.im;
@@ -5583,8 +5590,8 @@ proc Inverse(def phi)
 
 	if(typeof(phi)=="projRatMap")
 	{
-      def R=GiveRing(phi.preim);
-      def S=GiveRing(phi.im);
+      def R=RingOf(phi.preim);
+      def S=RingOf(phi.im);
       projRatMap result;
 	  result.im=phi.preim;
 	  result.preim=phi.im;
@@ -5757,8 +5764,8 @@ proc Inverse(def phi)
 
 	if(typeof(phi)=="chartmap")
 	{
-    def R=GiveRing(phi.preim);
-    def S=GiveRing(phi.im);
+    def R=RingOf(phi.preim);
+    def S=RingOf(phi.im);
     chartmap result;
 	result.im=phi.preim;
 	result.preim=phi.im;
@@ -5958,7 +5965,7 @@ EXAMPLE: example blowUp;  shows an example
    int i;
    for(i=1; i<=n; i=i+1)
    {
-      def R=X.cover[i].in;
+      def R=RingOf(X.cover[i]);
 	  setring R;
 	  int m=nvars(R);
 	  C.cover[i].value=interred(C.cover[i].value);
@@ -6046,10 +6053,10 @@ EXAMPLE: example blowUp;  shows an example
 			phi.im=B.cover[j];
 			
 			chartmap psi=X.maps[r][s];
-			def S=X.cover[r].in;
-			def SS=X.cover[s].in;
-			def T=B.cover[i].in;
-			def TT=B.cover[j].in;
+			def S=RingOf(X.cover[r]);
+			def SS=RingOf(X.cover[s]);
+			def T=RingOf(B.cover[i]);
+			def TT=RingOf(B.cover[j]);
 			
 			setring T;
 			ideal I;
@@ -6152,10 +6159,10 @@ EXAMPLE: example blowUp;  shows an example
 		 }
 		 else
 		 {
-			def S=X.cover[r].in;
+			def S=RingOf(X.cover[r]);
 			nx=nvars(S);
 			
-			def T=B.cover[i].in;
+			def T=RingOf(B.cover[i]);
 			chartmap phi;
 			phi.preim=B.cover[i];
 			phi.im=B.cover[j];
@@ -6216,7 +6223,7 @@ EXAMPLE: example blowUp;  shows an example
 
    for(i=1; i<=size(B.cover); i=i+1)
    {
-	  def S=B.cover[i].in;
+	  def S=RingOf(B.cover[i]);
 	  setring S;
 	  ideal I=B.cover[i].value;
 	  ideal Ie=eD[i].value;
@@ -6323,7 +6330,7 @@ proc itblowUp(def X, def C)
 	int n=size(X.cover);
     for(i=1; i<=n; i=i+1)
     {
-    	def R=X.cover[i].entry.in;
+    	def R=RingOf(X.cover[i].entry);
 		setring R;
 		int m=nvars(R);
 		C.cover[i].entry.value=interred(C.cover[i].entry.value);
@@ -6429,7 +6436,7 @@ proc itblowUp(def X, def C)
 	for(i=1; i<=size(B.cover); i=i+1)
    	{
 		int j;
-	  	def S=B.cover[i].entry.in;
+	  	def S=RingOf(B.cover[i].entry);
 	  	setring S;
 	  	ideal I=B.cover[i].entry.value;
 	  	ideal Ie=eD.cover[i].value;
@@ -6493,7 +6500,7 @@ proc itblowUp(def X, def C)
 
 	// Computation of the blowup charts
 
-    	def R=X.entry.in;
+    	def R=RingOf(X.entry);
 		setring R;
 		int m=nvars(R);
 		C.entry.value=std(C.entry.value);
@@ -6598,7 +6605,7 @@ proc itblowUp(def X, def C)
 	for(i=1; i<=size(B); i=i+1)
    	{
 		int j;
-	  	def S=B[i].entry.in;
+	  	def S=RingOf(B[i].entry);
 	  	setring S;
 	  	ideal I=B[i].entry.value;
 	  	list elim=elimpart(I);
@@ -6666,8 +6673,8 @@ EXAMPLE: example strictTransform, shows an example"
 	  for(int k=1; k<=n; k=k+1)
 	  {
 	     int m=pi.maps[k][2];
-		 def R=Y.cover[m].in;
-	     def S=pi.blow.cover[k].in;
+		 def R=RingOf(Y.cover[m]);
+	     def S=RingOf(pi.blow.cover[k]);
 		 
 		 setring R;
 		 Ideal base=Y.cover[m].value;
@@ -6937,7 +6944,7 @@ if((size(#)==1)&&(typeof(#[1])=="ideal"))
 	     list Maps;
 		 poly h;
 		 chart Preim=PreCoverCharts[i];
-		 def S=Preim.in;
+		 def S=RingOf(Preim);
 		 setring S;
 		 ideal VarR=var(2);
 		 for(j=2; j<=nvars(R); j=j+1)
@@ -7000,7 +7007,7 @@ if((size(#)==1)&&(typeof(#[1])=="ideal"))
 		 phi.dom=ideal(L[i]);
 		 phi.ratFuncs[1]=phiRatFuncs;
 		 
-		 def S=PreCoverCharts[i].in;
+		 def S=RingOf(PreCoverCharts[i]);
 		 setring S;
          for(j=1; j<=nvars(R); j=j+1)
 		 {
@@ -7195,7 +7202,7 @@ if((size(#)==2)&&(typeof(#[1])=="ideal")&&(typeof(#[2])=="ideal"))
 	     list Maps;
 		 poly h;
 		 chart Preim=PreCoverCharts[i];
-		 def S=Preim.in;
+		 def S=RingOf(Preim);
 		 setring S;
 		 ideal VarR=var(2);
 		 for(j=2; j<=nvars(R); j=j+1)
@@ -7256,7 +7263,7 @@ if((size(#)==2)&&(typeof(#[1])=="ideal")&&(typeof(#[2])=="ideal"))
 		 phi.dom=ideal(L[i]);
 		 phi.ratFuncs[1]=phiRatFuncs;
 		 
-		 def S=PreCoverCharts[i].in;
+		 def S=RingOf(PreCoverCharts[i]);
 		 setring S;
          for(j=1; j<=nvars(R); j=j+1)
 		 {
@@ -7320,7 +7327,7 @@ if((size(#)==2)&&(typeof(#[1])=="scheme")&&(typeof(#[2])=="scheme"))
    list CoverSchemes,CoverMaps,CoverInvMaps;
    for(i=1; i<=n; i=i+1)
    {
-      def S=X.cover[i].in;
+      def S=RingOf(X.cover[i]);
 	  setring S;
 	  ideal IX=X.cover[i].value;
 	  ideal IW=W.cover[i].value;
@@ -7355,11 +7362,11 @@ if((size(#)==2)&&(typeof(#[1])=="scheme")&&(typeof(#[2])=="scheme"))
 			phi.preim=X.cover[i];
 			phi.im=CoverSchemes[j].cover[k];
 			
-			def S=X.cover[i].in;
+			def S=RingOf(X.cover[i]);
 			setring S;
 			phi.dom=0;
 			
-			def SS=CoverSchemes[j].cover[k].in;
+			def SS=RingOf(CoverSchemes[j].cover[k]);
 			phi.ratFuncs[1]=list();
 			for(l=1; l<=nvars(SS); l=l+1)
 			{
@@ -7387,11 +7394,11 @@ if((size(#)==2)&&(typeof(#[1])=="scheme")&&(typeof(#[2])=="scheme"))
 			phi.im=X.cover[i];
 			phi.preim=CoverSchemes[j].cover[k];
 			
-			def S=CoverSchemes[j].cover[k].in;
+			def S=RingOf(CoverSchemes[j].cover[k]);
 			setring S;
 			phi.dom=0;
 			
-			def SS=X.cover[i].in;
+			def SS=RingOf(X.cover[i]);
 			phi.ratFuncs[1]=list();
 			for(l=1; l<=nvars(SS); l=l+1)
 			{
@@ -7449,9 +7456,9 @@ EXAMPLE: example HybrSmoothTest; shows an example"
 if((size(#)==2)&&(typeof(#[1])=="chart")&&(typeof(#[2])=="chart"))
 {
    int result=1;
-   if(#[1].in!=#[2].in)
+   if(RingOf(#[1])!=RingOf(#[2]))
    {   ERROR("Incompatible Inputs");}
-   def R=#[1].in;
+   def R=RingOf(#[1]);
    setring R;   
    ideal IX=#[1].value;
    ideal IW=#[2].value;
@@ -7617,7 +7624,7 @@ if((size(#)==1)&&(typeof(#[1])=="scheme"))
    scheme X=#[1];
    for(int n=1; n<=size(X.cover); n=n+1)
    {
-      def S=X.cover[n].in;
+      def S=RingOf(X.cover[n]);
 	  setring S;
 	  chart W=0;
 	  kill S;
@@ -7676,7 +7683,7 @@ EXAMPLE: example isSmooth; gives an example"
    list Dec=IrredDec(X);
    for(i=1; i<=size(X.cover); i=i+1)
    {
-      def S=X.cover[i].in;
+      def S=RingOf(X.cover[i]);
       setring S;
       for(j=1; j<=size(Dec)-1; j=j+1)
       {
@@ -7745,7 +7752,7 @@ EXAMPLE: example maps; gives an example"
 
 		phi.preim=X.cover[n].entry;
 		phi.im=X.cover[n].entry;
-		def S=X.cover[n].entry.in;
+		def S=RingOf(X.cover[n].entry);
 		setring S;
 		phi.dom=ideal(1);
 		phi.ratFuncs[1]=list();
@@ -7759,7 +7766,7 @@ EXAMPLE: example maps; gives an example"
 
 		psi.preim=X.cover[m].entry;
 		psi.im=X.cover[m].entry;
-		def S=X.cover[m].entry.in;
+		def S=RingOf(X.cover[m].entry);
 		setring S;
 		psi.dom=ideal(1);
 		psi.ratFuncs[1]=list();
@@ -7833,12 +7840,12 @@ EXAMPLE: example maps; gives an example"
 		}
 
 		int i;
-		def S=result.preim.in;
+		def S=RingOf(result.preim);
 		setring S;
 		for(k=1; k<=ncols(result.dom); k=k+1)
 		{
 			poly p=1;
-			for(i=1; i<=nvars(result.im.in); i=i+1)
+			for(i=1; i<=nvars(RingOf(result.im)); i=i+1)
 			{
 				p=lcm(p,result.ratFuncs[k][i].den);
 			}
@@ -7919,7 +7926,7 @@ EXAMPLE: example itCompleteIntersectionCover; gives an example"
    list Cover;
    for(n=1; n<=size(WW.cover); n=n+1)
    {
-	  def S=WW.cover[n].entry.in;
+	  def S=RingOf(WW.cover[n].entry);
 	  setring S;
 	  Poly p=1;
 	  Cover=Cover+list(list(XX.cover[n].entry,WW.cover[n].entry,p,n));
@@ -7931,7 +7938,7 @@ EXAMPLE: example itCompleteIntersectionCover; gives an example"
    while(n<=size(Cover))
    {
 	  m=Cover[n][4];
-      def S=Cover[n][1].in;
+      def S=RingOf(Cover[n][1]);
 	  setring S;
 	  ideal IX=Cover[n][1].value;
 	  ideal IW=Cover[n][2].value;
@@ -8072,7 +8079,7 @@ EXAMPLE: example itCompleteIntersectionCover; gives an example"
 	  C.label=v,i;
 	  C.parent=XX.cover[m];
 
-	  def S=XX.cover[m].entry.in;
+	  def S=RingOf(XX.cover[m].entry);
 	  setring S;
 	  ideal I=Cover[n][1].value;
 	  poly f=Cover[n][3].value;
