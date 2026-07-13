@@ -183,6 +183,42 @@ static proc mod_init()
 ////////////////////////////////////////////////////////////////
 
 
+proc GiveRing()
+"USAGE: GiveRing(X); chart X
+RETURN: the ring of the chart X
+EXAMPLE: example GiveRing; shows an example"
+{
+	branchTo("chart",RingC);
+	branchTo("affVariety",RingAV);
+	branchTo("projVariety",RingPV);
+	branchTo("product",RingP);
+	branchTo("ratFunc",RingRF);
+	ERROR("Wrong input!");
+}
+example
+{"EXAMPLE:";
+	ring R=0,(x,y,z),dp;
+	chart U=ideal(x+y+1,x+y+z,z);
+	GiveRing(U);
+}
+
+
+proc GiveIdeal()
+"USAGE: GiveIdeal(X); chart X
+RETURN: the ideal defining the chart X
+EXAMPLE: example GiveIdeal; shows an example"
+{
+	branchTo("chart",IC);
+	ERROR("Wrong input!");
+}
+example
+{"EXAMPLE:";
+	ring R=0,(x,y,z),dp;
+	chart U=ideal(x+y+1,x+y+z,z);
+	GiveIdeal(U);
+}
+
+
 proc isEmpty()
 "USAGE: isEmpty(C); chart C
 RETURN: 1 if chart is the empty set, otherwise 0
@@ -213,7 +249,7 @@ example
 ring R=0,(x,y,z),dp;
 chart U=ideal(y2+x,y2+z,z);
 U=ForceStd(U);
-GetAttribute(U,"isSB");
+Attribute(U,"isSB");
 }
 
 
@@ -233,12 +269,12 @@ IdentityMap(U);
 }
 
 
-proc GetPreimageSpace()
-"USAGE: GetPreimage(phi); chartmap phi
+proc PreimageSpace()
+"USAGE: Preimage(phi); chartmap phi
 RETURN: the preimage chart of phi
-EXAMPLE: example GetPreimage; shows an example"
+EXAMPLE: example Preimage; shows an example"
 {
-	branchTo("chartmap",GetPreimageSpaceCM);
+	branchTo("chartmap",PreimageSpaceCM);
 	ERROR("Wrong input!");
 }
 example
@@ -249,16 +285,16 @@ list L=list(makeratFunc(a,b),makeratFunc(c,d));
 ring S=0,(x),dp;
 chart V=ideal(0);
 chartmap f=U,V,L;
-GetPreimageSpace(f);
+PreimageSpace(f);
 }
 
 
-proc GetImageSpace()
-"USAGE: GetImage(phi); chartmap phi
+proc ImageSpace()
+"USAGE: Image(phi); chartmap phi
 RETURN: the image chart of phi
-EXAMPLE: example GetImage; shows an example"
+EXAMPLE: example Image; shows an example"
 {
-	branchTo("chartmap",GetImageSpaceCM);
+	branchTo("chartmap",ImageSpaceCM);
 	ERROR("Wrong input!");
 }
 example
@@ -269,7 +305,7 @@ list L=list(makeratFunc(a,b),makeratFunc(c,d));
 ring S=0,(x),dp;
 chart V=ideal(0);
 chartmap f=U,V,L;
-GetImageSpace(f);
+ImageSpace(f);
 }
 
 
@@ -321,7 +357,7 @@ proc SetAttribute(def X, string key, def value)
 }
 
 
-proc GetAttribute(def X, string key)
+proc Attribute(def X, string key)
 {
 	if(typeof(X)=="AttribTable")
 	{
@@ -351,7 +387,7 @@ proc GetAttribute(def X, string key)
 		if(typeof(X)==Typelist[i])
 		{
 			kill i,Typelist;
-			return(GetAttribute(X.attributes,key));
+			return(Attribute(X.attributes,key));
 		}
 	}
 }
@@ -459,7 +495,7 @@ proc PrintAttributes(def X)
 	for(int i=1; i<=size(L); i=i+1)
 	{
 		string key=L[i];
-		def value=GetAttribute(X,key);
+		def value=Attribute(X,key);
 		key+" : type "+typeof(value);
 		kill key,value;
 	}
@@ -636,10 +672,30 @@ chart U=ideal(x2-yz);
 U;
 }
 
+static proc RingC(chart C)
+{
+	return(C.r_value);
+}
+
+static proc IC(chart C)
+{
+	if(defined(basering))
+	{
+		if(basering!=GiveRing(C))
+		{
+			ERROR("Chart is not defined in the current ring!");
+		}else{
+			return(C.value);
+		}
+	}else{
+		ERROR("No basering defined!");
+	}
+}
+
 // Print routine for chart
 static proc printChart(chart C)
 {
-   	def S=C.r_value;
+   	def S=GiveRing(C);
    	setring S;
 	if(!isEmpty(C))
    	{
@@ -659,7 +715,7 @@ static proc ForceStdC(chart C)
 {
 	if(isAttribute(C,"isSB"))
 	{
-		if(GetAttribute(C,"isSB"))
+		if(Attribute(C,"isSB"))
 		{
 			return(C);
 		}else{
@@ -684,13 +740,13 @@ static proc isEmptyC(chart C)
 {
 	if(isAttribute(C,"isEmpty"))
 	{
-		return(GetAttribute(C,"isEmpty"));
+		return(Attribute(C,"isEmpty"));
 	}else{
 		def R=C.r_value;
 		setring R;
 		if(isAttribute(C,"isSB"))
 		{
-			if(GetAttribute(C,"isSB"))
+			if(Attribute(C,"isSB"))
 			{
 				if(C.value[1]==1)
 				{
@@ -729,7 +785,7 @@ static proc ChartDimension(chart C)
 {
 	if(isAttribute(C,"dimension"))
 	{
-		return(GetAttribute(C,"dimension"));
+		return(Attribute(C,"dimension"));
 	}else{
 		def R=C.r_value;
 		setring R;
@@ -743,12 +799,12 @@ static proc ChartDimension(chart C)
 // For comparing charts
 static proc equalChart(chart U, chart V)
 {
-	if(charstr(U.in)!=charstr(V.in))
+	if(charstr(GiveRing(U))!=charstr(GiveRing(V)))
    	{
 		return(0);
    	}
 
-   	if(nvars(U.in)!=nvars(V.in))
+   	if(nvars(GiveRing(U))!=nvars(GiveRing(V)))
    	{
     	return(0);
    	}
@@ -947,7 +1003,7 @@ static proc isEmptyCM(chartmap phi)
 {
 	if(isAttribute(phi,"isEmpty"))
 	{
-		return(GetAttribute(phi,"isEmpty"));
+		return(Attribute(phi,"isEmpty"));
 	}else{
 		def R=phi.r_dom;
 		setring R;
@@ -962,12 +1018,12 @@ static proc isEmptyCM(chartmap phi)
 	}
 }
 
-static proc GetPreimageSpaceCM(chartmap phi)
+static proc PreimageSpaceCM(chartmap phi)
 {
 	return(phi.preim);
 }
 
-static proc GetImageSpaceCM(chartmap phi)
+static proc ImageSpaceCM(chartmap phi)
 {
 	return(phi.im);
 }
@@ -1020,7 +1076,7 @@ static proc equalChartmap(chartmap phi, chartmap psi)
       return(0);
    }
    
-   def S=phi.preim.in;
+   def S=GiveRing(phi.preim);
    setring S;
    
    if(size(phi.dom)!=size(psi.dom))
@@ -1062,11 +1118,11 @@ static proc notequalChartmap(chartmap phi, chartmap psi)
 
 static proc equalAffVariety(affVariety X, affVariety Y)
 {
-	if(X.in!=Y.in)
+	if(GiveRing(X)!=GiveRing(Y))
 	{
 		return(0);
 	}
-	def R=X.in;
+	def R=GiveRing(X);
 	setring R;
 	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
 	{
@@ -1085,11 +1141,11 @@ static proc notequalAffVariety(affVariety X, affVariety Y)
 
 static proc equalProjVariety(projVariety X, projVariety Y)
 {
-	if(X.in!=Y.in)
+	if(GiveRing(X)!=GiveRing(Y))
 	{
 		return(0);
 	}
-	def R=X.in;
+	def R=GiveRing(X);
 	setring R;
 	if((reduce(X.value,std(Y.value))==0)&&(reduce(Y.value,std(X.value))==0))
 	{
@@ -1180,8 +1236,8 @@ static proc printScheme(scheme X)
 	     "Map Chart "+string(index[i])+" -> Chart "+string(index[j])+":";
 		 
 	     phi=X.maps[i][j];
-         def T=phi.preim.in;
-         def S=phi.im.in;
+         def T=GiveRing(phi.preim);
+         def S=GiveRing(phi.im);
          
 		 setring T;
 		 "Domain: D("+string(phi.dom)+")";  
@@ -1220,7 +1276,7 @@ EXAMPLE: example ChartToScheme; creates an example"
 	scheme result;
 	
 	result.cover[1]=U;
-	def S=U.in;
+	def S=GiveRing(U);
 	setring S;
 	
 	list L;
@@ -1270,6 +1326,12 @@ affVariety X=ideal(x2z-y3);
 }
 
 
+static proc RingAV(affVariety V)
+{
+	return(V.r_value);
+}
+
+
 proc makeprojVar(ideal I)
 "USAGE: makeprojVar(I); ideal I
 RETURN: creates affine Variety Proj R/I, where R=basering
@@ -1286,6 +1348,12 @@ example
 {"EXAMPLE:";
 ring R=0,(x,y,z),dp;
 projVariety X=ideal(x2z-y3);
+}
+
+
+static proc RingPV(projVariety V);
+{
+	return(V.r_value);
 }
 
 
@@ -1482,9 +1550,15 @@ proc makeProduct(list #)
 }
 
 
+static proc RingP(product V)
+{
+	return(V.r_value);
+}
+
+
 proc printAffVariety(affVariety X)
 {
-	def R=X.in;
+	def R=GiveRing(X);
 	setring R;
     "ring = "+string(R);
     "quotient = "+string(X.value);
@@ -1495,7 +1569,7 @@ proc printAffVariety(affVariety X)
 
 proc printProjVariety(projVariety X)
 {
-	def R=X.in;
+	def R=GiveRing(X);
 	setring R;
     "ring = "+string(R);
     "quotient = "+string(X.value);
@@ -1506,8 +1580,8 @@ proc printProjVariety(projVariety X)
 
 proc printAffRatMap(affRatMap phi)
 {
-	def R=phi.preim.in;
-	def S=phi.im.in;
+	def R=GiveRing(phi.preim);
+	def S=GiveRing(phi.im);
     int i,k;
 
     setring R;
@@ -1539,8 +1613,8 @@ proc printAffRatMap(affRatMap phi)
 
 proc printProjRatMap(projRatMap phi)
 {
-	def R=phi.preim.in;
-	def S=phi.im.in;
+	def R=GiveRing(phi.preim);
+	def S=GiveRing(phi.im);
     int i,k;
 
     setring R;
@@ -2504,7 +2578,7 @@ EXAMPLE: example makeToricVariety; shows an example"
 				chart V=makeToricVariety(convexIntersection(MaxCones[i],MaxCones[j]),1);
 				def Ri=result.cover[i].in;
 				def Rj=result.cover[j].in;
-				def RV=V.in;
+				def RV=GiveRing(V);
 
 				intmat Mi=HB[i];
 				intmat Mj=HB[j];
@@ -3678,10 +3752,15 @@ F==H;
 1/(y*F)==H;
 }
 
+static proc RingRF(ratFunc F)
+{
+	return(F.r_den);
+}
+
 // Print routine for ratFunc
 static proc printratFunc(ratFunc r)
 {
-   def S=r.in;
+   def S=GiveRing(r);
    setring S;
    if(r.den==1)
    {
@@ -3959,12 +4038,12 @@ G;
 
 proc ChartmapCompIdeal(chartmap phi, Ideal I)
 "USAGE: ChartmapCompIdeal(phi,I); phi chartmap, I ideal
-ASSUME: I.in=phi.im.in
+ASSUME: I.in=GiveRing(phi.im)
 RETURN: Ideal defining the inverse image under phi of the closed subscheme defined by I
 EXAMPLE: example ChartmapCompIdeal; creates an example"
 {
-   def S=phi.preim.in;
-   def SS=phi.im.in;
+   def S=GiveRing(phi.preim);
+   def SS=GiveRing(phi.im);
    setring SS;
    int m=size(phi.ratFuncs);
    int n=size(I.value);
@@ -4034,11 +4113,11 @@ J;
 
 proc ChartmapCompChartmap(chartmap phi, chartmap psi)
 {
-   if(nvars(phi.preim.in)!=nvars(psi.im.in))      //to do: better compatability test
+   if(nvars(GiveRing(phi.preim))!=nvars(GiveRing(psi.im)))      //to do: better compatability test
    {   ERROR("Chartmaps not compatible");}
    
-   def S=psi.preim.in;
-   def SS=phi.preim.in;
+   def S=GiveRing(psi.preim);
+   def SS=GiveRing(phi.preim);
    list Maps;
    int i,j,k;
    ratFunc G,F;
@@ -4054,7 +4133,7 @@ proc ChartmapCompChartmap(chartmap phi, chartmap psi)
          F=ratFuncCompratFunc(G,psi.ratFuncs[i]);
          setring S;
          Dom[l]=lcm(F.num,psi.dom[i]);
-         for(k=1; k<=nvars(phi.im.in); k=k+1)
+         for(k=1; k<=nvars(GiveRing(phi.im)); k=k+1)
          {
             Maps=Maps+list(ratFuncCompratFunc(phi.ratFuncs[j][k],psi.ratFuncs[i]));
          }
@@ -4100,8 +4179,8 @@ RETURN: Ideal J that, if no additional input given, represents the image of phi,
         otherwise it represents the image of V(I) under phi
 EXAMPLE: example chartmapImage; gives an example"
 {
-   def R=phi.preim.in;
-   def S=phi.im.in;
+   def R=GiveRing(phi.preim);
+   def S=GiveRing(phi.im);
    Ideal result;
    int i,j,n,m,e,c;
    n=nvars(R);
@@ -4539,7 +4618,7 @@ proc isSameMap(def phi, def psi)
 	{
 		return(0);
 	}
-	def R=phi.preim.in;
+	def R=GiveRing(phi.preim);
 	setring R;
 	poly p;
 	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
@@ -4559,7 +4638,7 @@ proc isSameMap(def phi, def psi)
 	{
 		return(0);
 	}
-	def R=phi.preim.in;
+	def R=GiveRing(phi.preim);
 	setring R;
 	int n=size(phi.ratFuncs);
 	matrix M[2][n];
@@ -4607,8 +4686,8 @@ proc affRatMapCompaffRatMap(affRatMap phi, affRatMap psi)
 
 proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
 {
-	def R=psi.preim.in;
-	def S=psi.im.in;
+	def R=GiveRing(psi.preim);
+	def S=GiveRing(psi.im);
 	projRatMap result;
 	result.preim=psi.preim;
 	result.im=phi.im;
@@ -4710,9 +4789,9 @@ proc Domain(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-		def S=phi.preim.in;
+		def S=GiveRing(phi.preim);
 		setring S;
-		int n=nvars(phi.im.in);
+		int n=nvars(GiveRing(phi.im));
 		Ideal Dom=ideal(1);
 		ideal I=phi.preim.value;
 
@@ -4730,9 +4809,9 @@ proc Domain(def phi)
 	}else{
 	if(typeof(phi)=="projRatMap")
 	{
-		def S=phi.preim.in;
+		def S=GiveRing(phi.preim);
 		setring S;
-		int n=nvars(phi.im.in);
+		int n=nvars(GiveRing(phi.im));
 		int m=nvars(S);
 		int i;
 		Ideal Dom=ideal(0);
@@ -4818,8 +4897,8 @@ EXAMPLE: example InvImage; gives an example"
 
    if((typeof(X)=="affVariety")&&(typeof(phi)=="affRatMap"))
    {
-	def R=phi.preim.in;
-	def S=phi.im.in;
+	def R=GiveRing(phi.preim);
+	def S=GiveRing(phi.im);
 
 	setring S;
 	int i;
@@ -4847,8 +4926,8 @@ EXAMPLE: example InvImage; gives an example"
 
    if((typeof(X)=="projVariety")&&(typeof(phi)=="projRatMap"))
    {
-	def R=phi.preim.in;
-	def S=phi.im.in;
+	def R=GiveRing(phi.preim);
+	def S=GiveRing(phi.im);
 	int i;
 
 	setring S;
@@ -4942,7 +5021,7 @@ proc Graph(def phi)
 	if(typeof(phi)=="affRatMap")
 	{
 		product result=makeProduct(phi.preim,phi.im);
-		def S=phi.preim.in;
+		def S=GiveRing(phi.preim);
 		int n=nvars(S);
 		int i;
 
@@ -4978,7 +5057,7 @@ proc Graph(def phi)
 	if(typeof(phi)=="projRatMap")
 	{
 		product result=makeProduct(phi.preim,phi.im);
-		def S=phi.preim.in;
+		def S=GiveRing(phi.preim);
 		int n=nvars(S);
 		int i,j;
 
@@ -5085,8 +5164,8 @@ EXAMPLE: example Image; gives an example"
    }else{
    if(typeof(phi)=="affRatMap")
    {
-      def R=phi.preim.in;
-      def S=phi.im.in;
+      def R=GiveRing(phi.preim);
+      def S=GiveRing(phi.im);
       affVariety result;
       int i,j,n,m,e,c;
       n=nvars(R);
@@ -5184,8 +5263,8 @@ EXAMPLE: example Image; gives an example"
    }else{
    if(typeof(phi)=="projRatMap")
    {
-      def R=phi.preim.in;
-      def S=phi.im.in;
+      def R=GiveRing(phi.preim);
+      def S=GiveRing(phi.im);
       projVariety result;
       int i,j,n,m,e,c;
       n=nvars(R);
@@ -5377,8 +5456,8 @@ proc Inverse(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-      def R=phi.preim.in;
-      def S=phi.im.in;
+      def R=GiveRing(phi.preim);
+      def S=GiveRing(phi.im);
       affRatMap result;
 	  result.im=phi.preim;
 	  result.preim=phi.im;
@@ -5504,8 +5583,8 @@ proc Inverse(def phi)
 
 	if(typeof(phi)=="projRatMap")
 	{
-      def R=phi.preim.in;
-      def S=phi.im.in;
+      def R=GiveRing(phi.preim);
+      def S=GiveRing(phi.im);
       projRatMap result;
 	  result.im=phi.preim;
 	  result.preim=phi.im;
@@ -5678,8 +5757,8 @@ proc Inverse(def phi)
 
 	if(typeof(phi)=="chartmap")
 	{
-    def R=phi.preim.in;
-    def S=phi.im.in;
+    def R=GiveRing(phi.preim);
+    def S=GiveRing(phi.im);
     chartmap result;
 	result.im=phi.preim;
 	result.preim=phi.im;

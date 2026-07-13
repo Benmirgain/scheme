@@ -14,3 +14,7 @@ chart V=ideal(1);
 V;
 U!=V;
 U==U;
+
+def S=GiveRing(U);
+setring S;
+GiveIdeal(U);

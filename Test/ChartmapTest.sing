@@ -13,8 +13,8 @@ chart V=ideal(0);
 
 chartmap f=U,V,L;
 f;
-GetImageSpace(f);
-GetPreimageSpace(f);
+ImageSpace(f);
+PreimageSpace(f);
 
 IdentityMap(U);
 
