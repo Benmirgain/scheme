@@ -73,8 +73,8 @@ ideal J=M[2,1..ncols(M)];
 def T=RingOf(Fano.cover[n]);
 setring T;
 ideal J=imap(RS,J);
-Fano.cover[n].value=Fano.cover[n].value+J;
-J=Fano.cover[n].value;
+Fano.cover[n].value=ValueOf(Fano.cover[n])+J;
+J=ValueOf(Fano.cover[n]);
 
 for(k=1; k<=nvars(R); k=k+1)
 {
@@ -207,7 +207,7 @@ for(m=1; m<=nvars(R); m=m+1)
    }else{
       def Rnew=RingOf(Fano.cover[m]);
       setring Rnew;
-      ideal CC=Fano.cover[m].value;
+      ideal CC=ValueOf(Fano.cover[m]);
    }
    CC=CC+imap(R,Cred);
    if(doElimination)
@@ -216,7 +216,7 @@ for(m=1; m<=nvars(R); m=m+1)
       kill psi;
       def Rnewnew=RingOf(Fano.cover[m]);
       setring Rnewnew;
-      X.cover[m]=makeChart(interred(IC.value+Fano.cover[m].value));
+      X.cover[m]=makeChart(interred(ValueOf(IC)+ValueOf(Fano.cover[m])));
       kill IC;
       setring Rnew;
       kill CC;
@@ -236,7 +236,7 @@ for(m=1; m<=nvars(R); m=m+1)
    {
       def T=RingOf(X.cover[m]);
       setring T;
-      list eliml=elimpart(X.cover[m].value);
+      list eliml=elimpart(ValueOf(X.cover[m]));
 
       ideal Jelim=eliml[1];
       ideal Jelimfive=eliml[5];

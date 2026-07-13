@@ -7,7 +7,7 @@ killall();
 ring R=0,(x,y,z),dp;
 chart U=ideal(x,y);
 U;
-U=ForceStd(U);
+U=StdOf(U);
 dim(U);
 isEmpty(U);
 chart V=ideal(1);
@@ -17,4 +17,4 @@ U==U;
 
 def S=RingOf(U);
 setring S;
-GiveIdeal(U);
+ValueOf(U);

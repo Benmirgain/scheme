@@ -2,6 +2,7 @@ system("--no-out",1);
 option(noloadProc);
 option(noredefine);
 LIB "scheme.lib";
+"";
 
 system("--no-out",0);
 "starting AttributeTest.sing";
