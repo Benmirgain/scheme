@@ -58,8 +58,8 @@ L=L+list(list(f,3,2));
 
 
 morphism phi=X,Y,L;
-phi.preim.cover;
-phi.im.cover;
+PreimageSpace(phi).cover;
+ImageSpace(phi).cover;
 phi.chartmaps;
 
 setring S;

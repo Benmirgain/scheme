@@ -201,7 +201,7 @@ for(m=1; m<=nvars(R); m=m+1)
    if(doElimination)
    {
       chartmap psi=Maps[m][2];
-      def Rnew=RingOf(psi.im);
+      def Rnew=RingOf(ImageSpace(psi));
       setring Rnew;
       ideal CC;
    }else{

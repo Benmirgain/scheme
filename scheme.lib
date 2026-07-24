@@ -1028,15 +1028,15 @@ static proc printChartmap(chartmap phi)
 	{
 		"Empty Chartmap";
 	}else{
-   		def R=RingOf(phi.preim);
-   		def S=RingOf(phi.im);
+   		def R=RingOf(PreimageSpace(phi));
+   		def S=RingOf(ImageSpace(phi));
    		int i,k;
 
    		setring R;
-   		"Preimage ring: ("+string(R)+")/("+string(ValueOf(phi.preim))+")"; 
+   		"Preimage ring: ("+string(R)+")/("+string(ValueOf(PreimageSpace(phi)))+")"; 
    		"Domain: D("+string(phi.dom)+")";   
   		setring S;
-   		"Image ring: ("+string(S)+")/("+string(ValueOf(phi.im))+")";
+   		"Image ring: ("+string(S)+")/("+string(ValueOf(ImageSpace(phi)))+")";
    		string st;
    		int n=size(phi.ratFuncs);
    		int m=nvars(S);
@@ -1064,12 +1064,12 @@ static proc printChartmap(chartmap phi)
 // Used for comparing chartmaps
 static proc equalChartmap(chartmap phi, chartmap psi)
 {
-   if((phi.preim!=psi.preim)||(phi.im!=psi.im))
+   if((PreimageSpace(phi)!=PreimageSpace(psi))||(ImageSpace(phi)!=ImageSpace(psi)))
    {
       return(0);
    }
    
-   def S=RingOf(phi.preim);
+   def S=RingOf(PreimageSpace(phi));
    setring S;
    
    if(size(phi.dom)!=size(psi.dom))
@@ -1092,7 +1092,7 @@ static proc equalChartmap(chartmap phi, chartmap psi)
       for(j=1; j<=size(phi.ratFuncs[i]); j=j+1)
       {
 	     poly f=phi.ratFuncs[i][j].num*psi.ratFuncs[i][j].den-psi.ratFuncs[i][j].num*phi.ratFuncs[i][j].den;
-		 if(std(reduce(f,sat(ValueOf(phi.preim),ideal(phi.dom[i]))))!=0)
+		 if(std(reduce(f,sat(ValueOf(PreimageSpace(phi)),ideal(phi.dom[i]))))!=0)
 		 {
 		    return(0);
 		 }
@@ -1229,8 +1229,8 @@ static proc printScheme(scheme X)
 	     "Map Chart "+string(index[i])+" -> Chart "+string(index[j])+":";
 		 
 	     phi=X.maps[i][j];
-         def T=RingOf(phi.preim);
-         def S=RingOf(phi.im);
+         def T=RingOf(PreimageSpace(phi));
+         def S=RingOf(ImageSpace(phi));
          
 		 setring T;
 		 "Domain: D("+string(phi.dom)+")";  
@@ -1269,18 +1269,9 @@ EXAMPLE: example ChartToScheme; creates an example"
 	scheme result;
 	
 	result.cover[1]=U;
-	def S=RingOf(U);
-	setring S;
-	
-	list L;
-	ratFunc r;
-	for(int i=1;i<=nvars(S);i=i+1)
-	{
-	   r=var(i);
-	   L[i]=r;
-	}
-	chartmap Phi=U,U,L;
+	chartmap Phi=IdentityMap(U);
 	result.maps=list(list(Phi));
+	kill Phi;
 	
 	return(result);
 }
@@ -1573,15 +1564,15 @@ proc printProjVariety(projVariety X)
 
 proc printAffRatMap(affRatMap phi)
 {
-	def R=RingOf(phi.preim);
-	def S=RingOf(phi.im);
+	def R=RingOf(PreimageSpace(phi));
+	def S=RingOf(ImageSpace(phi));
     int i,k;
 
     setring R;
-    "Preimage ring: ("+string(R)+")/("+string(ValueOf(phi.preim))+")"; 
+    "Preimage ring: ("+string(R)+")/("+string(ValueOf(PreimageSpace(phi)))+")"; 
     "Domain: D("+string(Domain(phi))+")";   
     setring S;
-    "Image ring: ("+string(S)+")/("+string(ValueOf(phi.im))+")";
+    "Image ring: ("+string(S)+")/("+string(ValueOf(ImageSpace(phi)))+")";
     string st;
 	int n=nvars(R);
     int m=nvars(S);
@@ -1606,15 +1597,15 @@ proc printAffRatMap(affRatMap phi)
 
 proc printProjRatMap(projRatMap phi)
 {
-	def R=RingOf(phi.preim);
-	def S=RingOf(phi.im);
+	def R=RingOf(PreimageSpace(phi));
+	def S=RingOf(ImageSpace(phi));
     int i,k;
 
     setring R;
-    "Preimage ring: ("+string(R)+")/("+string(ValueOf(phi.preim))+")"; 
+    "Preimage ring: ("+string(R)+")/("+string(ValueOf(PreimageSpace(phi)))+")"; 
     "Domain: D("+string(Domain(phi))+")";   
     setring S;
-    "Image ring: ("+string(S)+")/("+string(ValueOf(phi.im))+")";
+    "Image ring: ("+string(S)+")/("+string(ValueOf(ImageSpace(phi)))+")";
     string st;
 	int n=nvars(R);
     int m=nvars(S);
@@ -4031,12 +4022,12 @@ G;
 
 proc ChartmapCompIdeal(chartmap phi, Ideal I)
 "USAGE: ChartmapCompIdeal(phi,I); phi chartmap, I ideal
-ASSUME: I.in=RingOf(phi.im)
+ASSUME: I.in=RingOf(ImageSpace(phi))
 RETURN: Ideal defining the inverse image under phi of the closed subscheme defined by I
 EXAMPLE: example ChartmapCompIdeal; creates an example"
 {
-   def S=RingOf(phi.preim);
-   def SS=RingOf(phi.im);
+   def S=RingOf(PreimageSpace(phi));
+   def SS=RingOf(ImageSpace(phi));
    setring SS;
    int m=size(phi.ratFuncs);
    int n=size(ValueOf(I));
@@ -4067,7 +4058,7 @@ EXAMPLE: example ChartmapCompIdeal; creates an example"
          II=II+ideal(f*LL[j].num);
       }
 	  kill f,k;
-      II=ValueOf(II)+ValueOf(phi.preim);
+      II=ValueOf(II)+ValueOf(PreimageSpace(phi));
       II=sat(ValueOf(II),phi.dom[i]);
       L[i]=II;
    }
@@ -4106,11 +4097,11 @@ J;
 
 proc ChartmapCompChartmap(chartmap phi, chartmap psi)
 {
-   if(nvars(RingOf(phi.preim))!=nvars(RingOf(psi.im)))      //to do: better compatability test
+   if(nvars(RingOf(PreimageSpace(phi)))!=nvars(RingOf(ImageSpace(psi))))      //to do: better compatability test
    {   ERROR("Chartmaps not compatible");}
    
-   def S=RingOf(psi.preim);
-   def SS=RingOf(phi.preim);
+   def S=RingOf(PreimageSpace(psi));
+   def SS=RingOf(PreimageSpace(phi));
    list Maps;
    int i,j,k;
    ratFunc G,F;
@@ -4126,7 +4117,7 @@ proc ChartmapCompChartmap(chartmap phi, chartmap psi)
          F=ratFuncCompratFunc(G,psi.ratFuncs[i]);
          setring S;
          Dom[l]=lcm(F.num,psi.dom[i]);
-         for(k=1; k<=nvars(RingOf(phi.im)); k=k+1)
+         for(k=1; k<=nvars(RingOf(ImageSpace(phi))); k=k+1)
          {
             Maps=Maps+list(ratFuncCompratFunc(phi.ratFuncs[j][k],psi.ratFuncs[i]));
          }
@@ -4134,7 +4125,7 @@ proc ChartmapCompChartmap(chartmap phi, chartmap psi)
       }
    }
    
-   chartmap result=psi.preim,phi.im,Dom,Maps;
+   chartmap result=PreimageSpace(psi),ImageSpace(phi),Dom,Maps;
    kill Dom;
    return(result);
 }
@@ -4167,13 +4158,13 @@ phi*psi;
 
 proc chartmapImage(chartmap phi, list #)
 "USAGE: chartmapImage(phi[,I]); phi chartmap, I Ideal
-ASSUME: I lies in the ring of phi.preim
+ASSUME: I lies in the ring of PreimageSpace(phi)
 RETURN: Ideal J that, if no additional input given, represents the image of phi, 
         otherwise it represents the image of V(I) under phi
 EXAMPLE: example chartmapImage; gives an example"
 {
-   def R=RingOf(phi.preim);
-   def S=RingOf(phi.im);
+   def R=RingOf(PreimageSpace(phi));
+   def S=RingOf(ImageSpace(phi));
    Ideal result;
    int i,j,n,m,e,c;
    n=nvars(R);
@@ -4181,7 +4172,7 @@ EXAMPLE: example chartmapImage; gives an example"
    c=char(R);
    
    setring R;
-   ideal A=ValueOf(phi.preim);
+   ideal A=ValueOf(PreimageSpace(phi));
    if((size(#)==1)&&(typeof(#[1])=="ideal"))
    {
       A=A+#[1];
@@ -4194,7 +4185,7 @@ EXAMPLE: example chartmapImage; gives an example"
    }}
    
    setring S;
-   ideal B=ValueOf(phi.im);
+   ideal B=ValueOf(ImageSpace(phi));
    result=makeIdeal(ideal(1));
    
    for(i=1; i<=size(phi.ratFuncs); i=i+1)
@@ -4389,8 +4380,8 @@ L=L+list(list(phi,3,2));
 
 
 morphism psi=X,Y,L;
-psi.preim.cover;
-psi.im.cover;
+PreimageSpace(psi).cover;
+ImageSpace(psi).cover;
 psi.chartmaps;
 }
 
@@ -4401,31 +4392,31 @@ proc MorphismCompMorphism(morphism phi, morphism psi)
 RETURN: Composition of phi with psi
 EXAMPLE: example MorphismCompMorphism; gives an example"
 {
-   if(phi.preim!=psi.im)
+   if(PreimageSpace(phi)!=ImageSpace(psi))
    {
       ERROR("Inputs not compatible");
    }
    
    morphism result;
    
-   result.preim=psi.preim;
-   result.im=phi.im;
+   result.preim=PreimageSpace(psi);
+   result.im=ImageSpace(phi);
    
    int i,j,k,l;
-   for(i=1; i<=size(psi.preim.cover); i=i+1)
+   for(i=1; i<=size(PreimageSpace(psi).cover); i=i+1)
    {
       result.chartmaps[i]=list();   
-      for(j=1; j<=size(phi.im.cover); j=j+1)
+      for(j=1; j<=size(ImageSpace(phi).cover); j=j+1)
       {
          chartmap f;
-		 f.preim=psi.preim.cover[i];
-		 f.im=phi.im.cover[j];
+		 f.preim=PreimageSpace(psi).cover[i];
+		 f.im=ImageSpace(phi).cover[j];
 		 
-		 def S=RingOf(psi.preim.cover[i]);
+		 def S=RingOf(PreimageSpace(psi).cover[i]);
 		 setring S;
 		 f.dom=ideal(0);
 		 
-		 for(k=1; k<=size(phi.preim.cover); k=k+1)
+		 for(k=1; k<=size(PreimageSpace(phi).cover); k=k+1)
 		 {
 		    chartmap g=phi.chartmaps[k][j]*psi.chartmaps[i][k];
 			
@@ -4607,17 +4598,17 @@ proc isSameMap(def phi, def psi)
 {
 	if((typeof(phi)=="affRatMap")&&(typeof(psi)=="affRatMap"))
 	{
-	if((phi.preim!=psi.preim)||(size(phi.ratFuncs)!=size(psi.ratFuncs)))
+	if((PreimageSpace(phi)!=PreimageSpace(psi))||(size(phi.ratFuncs)!=size(psi.ratFuncs)))
 	{
 		return(0);
 	}
-	def R=RingOf(phi.preim);
+	def R=RingOf(PreimageSpace(phi));
 	setring R;
 	poly p;
 	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
 	{
 		p=phi.ratFuncs[i].num*psi.ratFuncs[i].den-psi.ratFuncs[i].num*phi.ratFuncs[i].den;
-		if(reduce(p,std(ValueOf(phi.preim)))!=0)
+		if(reduce(p,std(ValueOf(PreimageSpace(phi))))!=0)
 		{
 			return(0);
 		}
@@ -4627,11 +4618,11 @@ proc isSameMap(def phi, def psi)
 
 	if((typeof(phi)=="projRatMap")&&(typeof(psi)=="projRatMap"))
 	{
-	if((phi.preim!=psi.preim)||(size(phi.ratFuncs)!=size(psi.ratFuncs)))
+	if((PreimageSpace(phi)!=PreimageSpace(psi))||(size(phi.ratFuncs)!=size(psi.ratFuncs)))
 	{
 		return(0);
 	}
-	def R=RingOf(phi.preim);
+	def R=RingOf(PreimageSpace(phi));
 	setring R;
 	int n=size(phi.ratFuncs);
 	matrix M[2][n];
@@ -4641,7 +4632,7 @@ proc isSameMap(def phi, def psi)
 		M[2,i]=ValueOf(psi.ratFuncs[i]);
 	}
 	ideal I=minor(M,2);
-	if(size(reduce(I,std(ValueOf(phi.preim))))!=0)
+	if(size(reduce(I,std(ValueOf(PreimageSpace(phi)))))!=0)
 	{
 		return(0);
 	}
@@ -4665,8 +4656,8 @@ static proc isnotSameMap(def phi, def psi)
 proc affRatMapCompaffRatMap(affRatMap phi, affRatMap psi)
 {
 	affRatMap result;
-	result.preim=psi.preim;
-	result.im=phi.im;
+	result.preim=PreimageSpace(psi);
+	result.im=ImageSpace(phi);
 
 	for(int i=1; i<=size(phi.ratFuncs); i=i+1)
 	{
@@ -4679,11 +4670,11 @@ proc affRatMapCompaffRatMap(affRatMap phi, affRatMap psi)
 
 proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
 {
-	def R=RingOf(psi.preim);
-	def S=RingOf(psi.im);
+	def R=RingOf(PreimageSpace(psi));
+	def S=RingOf(ImageSpace(psi));
 	projRatMap result;
-	result.preim=psi.preim;
-	result.im=phi.im;
+	result.preim=PreimageSpace(psi);
+	result.im=ImageSpace(phi);
 
 	setring S;
 	ideal I=0;
@@ -4723,8 +4714,8 @@ EXAMPLE: example ChartmapToMorphism; gives an example"
 {
    morphism result;
    
-   result.preim=ChartToScheme(phi.preim);
-   result.im=ChartToScheme(phi.im);
+   result.preim=ChartToScheme(PreimageSpace(phi));
+   result.im=ChartToScheme(ImageSpace(phi));
    result.chartmaps=list(list(phi));
    
    return(result);
@@ -4740,8 +4731,8 @@ chart V=0;
 chartmap phi=U,V,Dom,L;
 
 morphism Phi=ChartmapToMorphism(phi);
-Phi.preim;
-Phi.im;
+PreimageSpace(Phi);
+ImageSpace(Phi);
 Phi.chartmaps;
 }
 
@@ -4771,8 +4762,8 @@ scheme Z=makeProjScheme(ideal(x-z,y-z),X);
 list L=blowUp(X,Z);
 
 morphism Pi=BlowUpMapToMorphism(L[2]);
-Pi.preim.cover;
-Pi.im.cover;
+PreimageSpace(Pi).cover;
+ImageSpace(Pi).cover;
 Pi.chartmaps;
 }
 
@@ -4782,11 +4773,11 @@ proc Domain(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-		def S=RingOf(phi.preim);
+		def S=RingOf(PreimageSpace(phi));
 		setring S;
-		int n=nvars(RingOf(phi.im));
+		int n=nvars(RingOf(ImageSpace(phi)));
 		Ideal Dom=ideal(1);
-		ideal I=ValueOf(phi.preim);
+		ideal I=ValueOf(PreimageSpace(phi));
 
 		for(int i=1; i<=n; i=i+1)
 		{
@@ -4802,13 +4793,13 @@ proc Domain(def phi)
 	}else{
 	if(typeof(phi)=="projRatMap")
 	{
-		def S=RingOf(phi.preim);
+		def S=RingOf(PreimageSpace(phi));
 		setring S;
-		int n=nvars(RingOf(phi.im));
+		int n=nvars(RingOf(ImageSpace(phi)));
 		int m=nvars(S);
 		int i;
 		Ideal Dom=ideal(0);
-		ideal I=ValueOf(phi.preim);
+		ideal I=ValueOf(PreimageSpace(phi));
 		ideal J=0;
 		ideal Z=0;
 
@@ -4845,15 +4836,15 @@ EXAMPLE: example InvImage; gives an example"
    scheme result;
    
    int i,j;
-   for(i=1; i<=size(phi.preim.cover); i=i+1)
+   for(i=1; i<=size(PreimageSpace(phi).cover); i=i+1)
    {
-      def S=RingOf(phi.preim.cover[i]);
+      def S=RingOf(PreimageSpace(phi).cover[i]);
 	  setring S;
 	  ideal I=1;
 	  Ideal J;
-      for(j=1; j<=size(phi.im.cover); j=j+1)
+      for(j=1; j<=size(ImageSpace(phi).cover); j=j+1)
       {
-	     def T=RingOf(phi.im.cover[j]);
+	     def T=RingOf(ImageSpace(phi).cover[j]);
 		 setring S;
 		 if(std(phi.chartmaps[i][j].dom)!=0)
 		 {
@@ -4866,7 +4857,7 @@ EXAMPLE: example InvImage; gives an example"
 		 kill T;
       }
 	  setring S;
-	  I=std(I+ValueOf(phi.preim.cover[i]));
+	  I=std(I+ValueOf(PreimageSpace(phi).cover[i]));
 	  chart U=I;
 	  result.cover[i]=U;
 	  
@@ -4874,7 +4865,7 @@ EXAMPLE: example InvImage; gives an example"
 	  kill J,S,U;
    }
    
-   result.maps=phi.preim.maps;
+   result.maps=PreimageSpace(phi).maps;
    
    for(i=1; i<=size(result.cover); i=i+1)
    {
@@ -4890,8 +4881,8 @@ EXAMPLE: example InvImage; gives an example"
 
    if((typeof(X)=="affVariety")&&(typeof(phi)=="affRatMap"))
    {
-	def R=RingOf(phi.preim);
-	def S=RingOf(phi.im);
+	def R=RingOf(PreimageSpace(phi));
+	def S=RingOf(ImageSpace(phi));
 
 	setring S;
 	int i;
@@ -4907,7 +4898,7 @@ EXAMPLE: example InvImage; gives an example"
 	{
 		p=lcm(p,L[i].den);
 	}
-	ideal I=ValueOf(phi.preim);
+	ideal I=ValueOf(PreimageSpace(phi));
 	for(i=1; i<=size(L); i=i+1)
 	{
 		I=I+ideal(L[i].num*p/L[i].den);
@@ -4919,8 +4910,8 @@ EXAMPLE: example InvImage; gives an example"
 
    if((typeof(X)=="projVariety")&&(typeof(phi)=="projRatMap"))
    {
-	def R=RingOf(phi.preim);
-	def S=RingOf(phi.im);
+	def R=RingOf(PreimageSpace(phi));
+	def S=RingOf(ImageSpace(phi));
 	int i;
 
 	setring S;
@@ -4938,7 +4929,7 @@ EXAMPLE: example InvImage; gives an example"
 	{
 		P[i]=var(i);
 	}
-	ideal J=f(I)+ValueOf(phi.preim);
+	ideal J=f(I)+ValueOf(PreimageSpace(phi));
 	J=sat(J,ValueOf(Domain(phi))*P);
 
 	projVariety result=J;
@@ -5013,8 +5004,8 @@ proc Graph(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-		product result=makeProduct(phi.preim,phi.im);
-		def S=RingOf(phi.preim);
+		product result=makeProduct(PreimageSpace(phi),ImageSpace(phi));
+		def S=RingOf(PreimageSpace(phi));
 		int n=nvars(S);
 		int i;
 
@@ -5049,8 +5040,8 @@ proc Graph(def phi)
 
 	if(typeof(phi)=="projRatMap")
 	{
-		product result=makeProduct(phi.preim,phi.im);
-		def S=RingOf(phi.preim);
+		product result=makeProduct(PreimageSpace(phi),ImageSpace(phi));
+		def S=RingOf(PreimageSpace(phi));
 		int n=nvars(S);
 		int i,j;
 
@@ -5090,7 +5081,7 @@ proc Graph(def phi)
 
 proc Image(def phi, list #)
 "USAGE: Image(phi[,Z]); phi morphism, Z scheme
-ASSUME: Z is a subscheme of phi.preim
+ASSUME: Z is a subscheme of PreimageSpace(phi)
 RETURN: scheme S that, if no additional input given, represents the image of phi, 
         otherwise it represents the image of Z under phi
 EXAMPLE: example Image; gives an example"
@@ -5102,20 +5093,20 @@ EXAMPLE: example Image; gives an example"
    
    if(size(#)==0)
    {
-      for(j=1; j<=size(phi.im.cover); j=j+1)
+      for(j=1; j<=size(ImageSpace(phi).cover); j=j+1)
 	  {
-	     def R=RingOf(phi.im.cover[j]);
+	     def R=RingOf(ImageSpace(phi).cover[j]);
 		 setring R;
 		 ideal I=ideal(1);
 		 Ideal J;
 		 
-		 for(i=1; i<=size(phi.preim.cover); i=i+1)
+		 for(i=1; i<=size(PreimageSpace(phi).cover); i=i+1)
 	     {
 		    J=chartmapImage(phi.chartmaps[i][j]);
 			I=intersect(I,ValueOf(J));
 		 }
 		 
-		 I=I+ValueOf(phi.im.cover[j]);
+		 I=I+ValueOf(ImageSpace(phi).cover[j]);
 		 result.cover[j]=makeChart(I);
 		 
 		 kill J,I;
@@ -5124,16 +5115,16 @@ EXAMPLE: example Image; gives an example"
    }else{
    if((size(#)==1)&&(typeof(#[1])=="scheme"))
    {
-      for(j=1; j<=size(phi.im.cover); j=j+1)
+      for(j=1; j<=size(ImageSpace(phi).cover); j=j+1)
 	  {
-	     def R=RingOf(phi.im.cover[j]);
+	     def R=RingOf(ImageSpace(phi).cover[j]);
 		 setring R;
 		 ideal I=ideal(1);
 		 Ideal J;
 		 
-		 for(i=1; i<=size(phi.preim.cover); i=i+1)
+		 for(i=1; i<=size(PreimageSpace(phi).cover); i=i+1)
 	     {
-		    def S=RingOf(phi.preim.cover[i]);
+		    def S=RingOf(PreimageSpace(phi).cover[i]);
 			setring S;
 			
 		    J=chartmapImage(phi.chartmaps[i][j],ValueOf(#[1].cover[i]));
@@ -5143,7 +5134,7 @@ EXAMPLE: example Image; gives an example"
 			kill S;
 		 }
 		 
-		 I=I+ValueOf(phi.im.cover[j]);
+		 I=I+ValueOf(ImageSpace(phi).cover[j]);
 		 result.cover[j]=makeChart(I);
 		 
 		 kill J,I;
@@ -5151,14 +5142,14 @@ EXAMPLE: example Image; gives an example"
 	  }
    }}
    
-   result.maps=phi.im.maps;
+   result.maps=ImageSpace(phi).maps;
    return(result);
    
    }else{
    if(typeof(phi)=="affRatMap")
    {
-      def R=RingOf(phi.preim);
-      def S=RingOf(phi.im);
+      def R=RingOf(PreimageSpace(phi));
+      def S=RingOf(ImageSpace(phi));
       affVariety result;
       int i,j,n,m,e,c;
       n=nvars(R);
@@ -5166,14 +5157,14 @@ EXAMPLE: example Image; gives an example"
       c=char(R);
    
       setring R;
-      ideal A=ValueOf(phi.preim);
+      ideal A=ValueOf(PreimageSpace(phi));
       if(size(#)==1)
       {  
 	     A=A+ValueOf(#[1]);
       }
    
       setring S;
-      ideal B=ValueOf(phi.im);
+      ideal B=ValueOf(ImageSpace(phi));
    
          setring R;
 	     poly p=1;
@@ -5256,8 +5247,8 @@ EXAMPLE: example Image; gives an example"
    }else{
    if(typeof(phi)=="projRatMap")
    {
-      def R=RingOf(phi.preim);
-      def S=RingOf(phi.im);
+      def R=RingOf(PreimageSpace(phi));
+      def S=RingOf(ImageSpace(phi));
       projVariety result;
       int i,j,n,m,e,c;
       n=nvars(R);
@@ -5265,14 +5256,14 @@ EXAMPLE: example Image; gives an example"
       c=char(R);
    
       setring R;
-      ideal A=ValueOf(phi.preim);
+      ideal A=ValueOf(PreimageSpace(phi));
       if(size(#)==1)
       {  
 	     A=A+ValueOf(#[1]);
       }
    
       setring S;
-      ideal B=ValueOf(phi.im);
+      ideal B=ValueOf(ImageSpace(phi));
 	  
          ring T=c,(x(1..n),y(1..m)),dp;
 	     setring T;
@@ -5449,21 +5440,21 @@ proc Inverse(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
-      def R=RingOf(phi.preim);
-      def S=RingOf(phi.im);
+      def R=RingOf(PreimageSpace(phi));
+      def S=RingOf(ImageSpace(phi));
       affRatMap result;
-	  result.im=phi.preim;
-	  result.preim=phi.im;
+	  result.im=PreimageSpace(phi);
+	  result.preim=ImageSpace(phi);
       int i,j,n,m,e,c,k,isdone;
       n=nvars(R);
       m=nvars(S);
       c=char(R);
    
       setring R;
-      ideal A=ValueOf(phi.preim);
+      ideal A=ValueOf(PreimageSpace(phi));
    
       setring S;
-      ideal B=ValueOf(phi.im);
+      ideal B=ValueOf(ImageSpace(phi));
    
          setring R;
 	     poly p=1;
@@ -5576,21 +5567,21 @@ proc Inverse(def phi)
 
 	if(typeof(phi)=="projRatMap")
 	{
-      def R=RingOf(phi.preim);
-      def S=RingOf(phi.im);
+      def R=RingOf(PreimageSpace(phi));
+      def S=RingOf(ImageSpace(phi));
       projRatMap result;
-	  result.im=phi.preim;
-	  result.preim=phi.im;
+	  result.im=PreimageSpace(phi);
+	  result.preim=ImageSpace(phi);
       int i,j,n,m,e,c,k,isdone;
       n=nvars(R);
       m=nvars(S);
       c=char(R);
    
       setring R;
-      ideal A=ValueOf(phi.preim);
+      ideal A=ValueOf(PreimageSpace(phi));
    
       setring S;
-      ideal B=ValueOf(phi.im);
+      ideal B=ValueOf(ImageSpace(phi));
 	  
          ring T=c,(x(1..n),y(1..m)),(dp(n),dp(m));
 	     setring T;
@@ -5750,18 +5741,18 @@ proc Inverse(def phi)
 
 	if(typeof(phi)=="chartmap")
 	{
-    def R=RingOf(phi.preim);
-    def S=RingOf(phi.im);
+    def R=RingOf(PreimageSpace(phi));
+    def S=RingOf(ImageSpace(phi));
     chartmap result;
-	result.im=phi.preim;
-	result.preim=phi.im;
+	result.im=PreimageSpace(phi);
+	result.preim=ImageSpace(phi);
     int i,j,n,m,e,c,k,isdone;
     n=nvars(R);
     m=nvars(S);
     c=char(R);
    
     setring R;
-    ideal A=ValueOf(phi.preim);
+    ideal A=ValueOf(PreimageSpace(phi));
 	ideal D=phi.dom;
    
     if(D==0)
@@ -5770,7 +5761,7 @@ proc Inverse(def phi)
 		result.dom=ideal(0);
 	}else{
         setring S;
-        ideal B=ValueOf(phi.im);
+        ideal B=ValueOf(ImageSpace(phi));
 	  
         ring T=c,(x(1..n),y(1..m)),(dp(n),dp(m));
 	    setring T;
@@ -5900,14 +5891,14 @@ proc Inverse(def phi)
 	if(typeof(phi)=="morphism")
 	{
 		morphism result;
-		result.preim=phi.im;
-		result.im=phi.preim;
+		result.preim=ImageSpace(phi);
+		result.im=PreimageSpace(phi);
 		int i,j;
 
-		for(i=1; i<=size(phi.im.cover); i=i+1)
+		for(i=1; i<=size(ImageSpace(phi).cover); i=i+1)
 		{
 			result.chartmaps[i]=list();
-			for(j=1; j<=size(phi.preim.cover); j=j+1)
+			for(j=1; j<=size(PreimageSpace(phi).cover); j=j+1)
 			{
 				result.chartmaps[i][j]=Inverse(phi.chartmaps[j][i]);
 			}
@@ -7826,12 +7817,12 @@ EXAMPLE: example maps; gives an example"
 		}
 
 		int i;
-		def S=RingOf(result.preim);
+		def S=RingOf(PreimageSpace(result));
 		setring S;
 		for(k=1; k<=ncols(result.dom); k=k+1)
 		{
 			poly p=1;
-			for(i=1; i<=nvars(RingOf(result.im)); i=i+1)
+			for(i=1; i<=nvars(RingOf(ImageSpace(result))); i=i+1)
 			{
 				p=lcm(p,result.ratFuncs[k][i].den);
 			}

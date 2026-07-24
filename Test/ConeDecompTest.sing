@@ -14,8 +14,8 @@ int seed=123456789;
 system("random",seed);
 
 //intmat H[5][3]=1,0,0,1,1,0,1,0,1,1,1,1,4,1,1;
-int n_vec=12;
-int d=4;
+int n_vec=22;
+int d=8;
 int b=20;
 intvec v=b:(n_vec*d);
 intmat H=random(b,n_vec,d)+intmat(v,n_vec,d);
