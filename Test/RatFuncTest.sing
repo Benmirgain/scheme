@@ -5,9 +5,9 @@ if(!defined(Scheme))
 killall();
 
 ring R=0,(x,y,z),dp;
-ratFunc f=x2+y2,z;
+ratFunc f=x2+y2,x+z;
 ratFunc g=x-z,1;
-ratFunc h=zx2+zy2,z2;
+ratFunc h=zx2+zy2,xz+z2;
 f;g;h;
 SimplifyRatFunc(f);
 SimplifyRatFunc(h);

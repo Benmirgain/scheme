@@ -368,8 +368,8 @@ static proc CoverTemplate(def X)
 	return(X.cover);
 }
 
-proc Cover()
-"USAGE: Cover(X); scheme X
+proc CoverOf()
+"USAGE: CoverOf(X); scheme X
 RETURN: the list of charts covering the scheme X
 EXAMPLE: example Cover; shows an example"
 {
@@ -386,8 +386,8 @@ static proc MapsTemplate(def X)
 	return(X.maps);
 }
 
-proc Maps()
-"USAGE: Maps(X); scheme X
+proc MapsOf()
+"USAGE: MapsOf(X); scheme X
 RETURN: the list of maps associated with the scheme X
 EXAMPLE: example Maps; shows an example"
 {
@@ -1709,6 +1709,32 @@ proc printProjRatMap(projRatMap phi)
  }
 
 
+proc SimplifyVector(Vector V)
+{
+	def R=RingOf(V);
+	setring R;
+	vector v=ValueOf(V);
+	poly p=denominator(V);
+	poly g=p;
+	int n=nrows(v);
+	int i;
+	for(i=1; i<=n; i=i+1)
+	{
+		g=gcd(g,v[i]);
+	}
+	g=g*leadcoef(p);
+	p=p/g;
+	vector w;
+	for(i=1; i<=n; i=i+1)
+	{
+		w=w+v[i]/g*gen(i);
+	}
+	Vector result=w,p;
+	kill v,w,p,R,i,n,g;
+	return(result);
+}
+
+
 static proc NrowsV(Vector V)
 {
 	def R=RingOf(V);
@@ -1727,6 +1753,7 @@ static proc DenV(Vector V)
 
 static proc stringVector(Vector V)
 {
+	V=SimplifyVector(V);
 	def R=RingOf(V);
 	setring R;
 	int n=nrows(V);
@@ -1735,11 +1762,16 @@ static proc stringVector(Vector V)
 	string st="[";
 	for(int i=1; i<=n; i=i+1)
 	{
-		if(p==1)
+		if(v[i]==0)
 		{
-			st=st+string(v[i]);
+			st=st+"0";
 		}else{
-			st=st+string(v[i])+"/"+string(p);
+			if(p==1)
+			{
+				st=st+string(v[i]);
+			}else{
+				st=st+string(v[i])+"/"+string(p);
+			}
 		}
 		if(i<n)
 		{
@@ -1895,6 +1927,58 @@ proc makeSheaf(list cover, list maps, def space, list #)
 static proc MapsOfSheaf(coherentSheaf F)
 {
 	return(F.modulemaps);
+}
+
+
+proc CotangentSheaf(scheme X)
+{
+	list Cover,Maps;
+	list XCover=CoverOf(X);
+	list XMaps=MapsOf(X);
+	int i,j,k,l;
+	for(i=1;i<=size(XCover);i=i+1)
+	{
+		def R=RingOf(XCover[i]);
+		setring R;
+		module M=transpose(jacob(ValueOf(XCover[i])));
+		Cover[i]=makeModule(M);
+		kill M;
+		kill R;
+	}
+
+	for(i=1;i<=size(XCover);i=i+1)
+	{
+		Maps[i]=list();
+		for(j=1;j<=size(XCover);j=j+1)
+		{
+			def R=RingOf(XCover[j]);
+			setring R;
+			chartmap phi=XMaps[j][i];
+			Module Preim=Cover[i];
+			Module Im=Cover[j];
+			list Rules;
+			for(k=1;k<=size(phi.ratFuncs[1]);k=k+1)
+			{
+				ratFunc r=phi.ratFuncs[1][k];
+				ratFunc dr;
+				Vector V=[0];
+				for(l=1;l<=nvars(R);l=l+1)
+				{
+					dr=SimplifyRatFunc(diff(r,l));
+					V=V+makeVector(numerator(dr)*gen(l),denominator(dr));
+				}
+				Rules[k]=V;
+				kill r,V,dr;
+			}
+			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+			kill Preim,Im,Rules,phi;
+			kill R;
+		}
+	}
+
+	coherentSheaf result=makeSheaf(Cover,Maps,X);
+	kill Cover,Maps,XCover,XMaps,i,j,k,l;
+	return(result);
 }
 
 
@@ -4028,12 +4112,17 @@ static proc printratFunc(ratFunc r)
 	r=SimplifyRatFunc(r);
    	def S=RingOf(r);
    	setring S;
-   	if(r.den==1)
-   	{
-    	string(r.num);   
-   	}else{
-      	string(r.num)+" / "+string(r.den);
-   	}
+	if(r.num==0)
+	{
+		string(0);
+	}else{
+   		if(r.den==1)
+   		{
+    		string(r.num);   
+   		}else{
+      		string(r.num)+" / "+string(r.den);
+   		}
+	}
 }
 
 
@@ -4043,12 +4132,17 @@ static proc stringratFunc(ratFunc r)
 	r=SimplifyRatFunc(r);
    	def S=RingOf(r);
    	setring S;
-   	if(r.den==1)
-   	{
-      	string st=string(r.num);   
-   	} else {
-      	string st=string(r.num)+" / "+string(r.den);
-   	}
+   	if(r.num==0)
+	{
+		st=string(0);
+	}else{
+   		if(r.den==1)
+   		{
+    		st=string(r.num);   
+   		}else{
+      		st=string(r.num)+" / "+string(r.den);
+   		}
+	}
 	kill S;
    	return(st);
 }
