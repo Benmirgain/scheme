@@ -122,7 +122,10 @@ static proc mod_init()
   newstruct("blowUpMap","scheme blow, scheme base, scheme exDiv, scheme center, list maps, AttribTable attributes");
   newstruct("iterativeScheme","list cover, list maps, AttribTable attributes");
   newstruct("iterativeChart","def parent, chart entry, chartmap parentmap, chartmap parentInverseMap, intvec label, AttribTable attributes");
-  newstruct("coherentSheaf","list cover, def space, AttribTable attributes");
+  newstruct("Module","module value, ring in, AttribTable attributes");
+  newstruct("Vector","vector value, ring in, poly den, AttribTable attributes");
+  newstruct("ModuleMap","Module preim, Module im, list rules, AttribTable attributes");
+  newstruct("coherentSheaf","list cover, def space, list modulemaps, AttribTable attributes");
   
   system("install","AttribTable","print",PrintAttributes,1);
   system("install","chart","=",makeChart,1);
@@ -174,6 +177,10 @@ static proc mod_init()
   system("install","morphism","*",MorphismCompMorphism,2);
   system("install","iterativeChart","print",printItChart,1);
   system("install","iterativeScheme","print",printItScheme,1);
+  system("install","Module","print",printModule,1);
+  system("install","Module","nrows",NrowsM,1);
+  system("install","Module","ncols",NcolsM,1);
+  system("install","Module","=",makeModule,1);
 }
 
 
@@ -198,6 +205,8 @@ EXAMPLE: example RingOf; shows an example"
 	branchTo("projVariety",RingPV);
 	branchTo("product",RingP);
 	branchTo("ratFunc",RingRF);
+	branchTo("Module",RingOfTemplate);
+	branchTo("Vector",RingOfTemplate);
 	branchTo("Poly",RingOfTemplate);
 	branchTo("Ideal",RingOfTemplate);
 	ERROR("Wrong input!");
@@ -224,6 +233,8 @@ EXAMPLE: example ValueOf; shows an example"
 	branchTo("affVariety",ValueOfTemplate);
 	branchTo("projVariety",ValueOfTemplate);
 	branchTo("product",ValueOfTemplate);
+	branchTo("Module",ValueOfTemplate);
+	branchTo("Vector",ValueOfTemplate);
 	branchTo("Poly",ValueOfTemplate);
 	branchTo("Ideal",ValueOfTemplate);
 	ERROR("Wrong input!");
@@ -342,6 +353,39 @@ ImageSpace(f);
 }
 
 
+static proc CoverTemplate(def X)
+{
+	return(X.cover);
+}
+
+proc Cover()
+"USAGE: Cover(X); scheme X
+RETURN: the list of charts covering the scheme X
+EXAMPLE: example Cover; shows an example"
+{
+	branchTo("scheme",CoverTemplate);
+	branchTo("iterativeScheme",CoverTemplate);
+	branchTo("coherentSheaf",CoverTemplate);
+	ERROR("Wrong input!");
+}
+
+
+
+static proc MapsTemplate(def X)
+{
+	return(X.maps);
+}
+
+proc Maps()
+"USAGE: Maps(X); scheme X
+RETURN: the list of maps associated with the scheme X
+EXAMPLE: example Maps; shows an example"
+{
+	branchTo("scheme",MapsTemplate);
+	branchTo("iterativeScheme",MapsTemplate);
+	branchTo("coherentSheaf",MapsOfSheaf);
+	ERROR("Wrong input!");
+}
 
 
 /////////////////////////////////////////////////////////////////
@@ -373,7 +417,7 @@ proc SetAttribute(def X, string key, def value)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -413,7 +457,7 @@ proc Attribute(def X, string key)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
 	
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -444,7 +488,7 @@ proc RemoveAttribute(def X, string key)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -479,7 +523,7 @@ proc isAttribute(def X, string key)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -502,7 +546,7 @@ proc AttributeList(def X)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -1628,10 +1672,102 @@ proc printProjRatMap(projRatMap phi)
 
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
+//  Module Stuff
+////////////////////////////////////////////////////////////////////////////////////////
 
 
+proc makeModule(module M)
+{
+	Module result;
+	result.in=basering;
+	result.value=M;
+	return(result);
+}
 
 
+static proc NrowsM(Module M)
+{
+	def R=RingOf(M);
+	setring R;
+	int n=nrows(ValueOf(M));
+	kill R;
+	return(n);
+}
+
+static proc NcolsM(Module M)
+{
+	def R=RingOf(M);
+	setring R;
+	int n=ncols(ValueOf(M));
+	kill R;
+	return(n);
+}
+
+
+static proc printModule(Module M)
+{
+	def R=RingOf(M);
+	setring R;
+	print(ValueOf(M));
+	kill R;
+}
+
+
+proc makeModuleMap(Module preim, Module im, list rules, list #)
+{
+	ModuleMap result;
+	result.preim=preim;
+	result.im=im;
+	if(size(rules)!=nrows(preim))
+	{   ERROR("Wrong input!");}
+	for(int i=1; i<=size(rules); i=i+1)
+	{
+		if(typeof(rules[i])!="Vector")
+		{
+			ERROR("Wrong input!");
+		}
+		result.rules[i]=rules[i];
+	}
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="AttribTable")
+		{
+			result.attributes=#[1];
+		}else{
+			ERROR("Wrong input!");
+		}
+	}
+	return(result);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Sheaf Stuff
+////////////////////////////////////////////////////////////////////////////////
+
+proc makeSheaf(list cover, list maps, def space, list #)
+{
+	coherentSheaf result;
+	result.cover=cover;
+	result.modulemaps=maps;
+	result.space=space;
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="AttribTable")
+		{
+			result.attributes=#[1];
+		}else{
+			ERROR("Wrong input!");
+		}
+	}
+	return(result);
+}
+
+
+static proc MapsOfSheaf(coherentSheaf F)
+{
+	return(F.modulemaps);
+}
 
 
 
@@ -3902,9 +4038,9 @@ ASSUME: r_1,...,r_n belong to the same ring and n=nvars(F.in)
 RETURN: F(r_1,...,r_n)
 EXAMPLE: example PolyCompratFunc; creates an example"
 {
-   def S=RingOf(F);
+   def S=F.r_value;
    setring S;
-   poly Fp=valueOf(F);
+   poly Fp=F.value;
    int n=size(#);
    int k;
    if(n!=nvars(S))
@@ -4670,6 +4806,7 @@ proc affRatMapCompaffRatMap(affRatMap phi, affRatMap psi)
 
 proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
 {
+	// to do kill variables
 	def R=RingOf(PreimageSpace(psi));
 	def S=RingOf(ImageSpace(psi));
 	projRatMap result;
@@ -4702,6 +4839,7 @@ proc projRatMapCompprojRatMap(projRatMap phi, projRatMap psi)
 		P=J[i]/g;
 		result.ratFuncs[i]=P;
 	}
+	kill P;
 
 	return(result);
 }
@@ -5725,6 +5863,7 @@ proc Inverse(def phi)
 			F=r/M[2,j]*M[1,j];
 			result.ratFuncs=result.ratFuncs+list(F);
 		 }
+		 kill F;
 	  
 	     kill h;
 	     setring S;
