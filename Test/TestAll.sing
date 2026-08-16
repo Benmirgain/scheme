@@ -15,6 +15,11 @@ system("--no-out",1);
 <"ChartTest.sing";
 
 system("--no-out",0);
+"starting ModuleTest.sing";
+system("--no-out",1);
+<"ModuleTest.sing";
+
+system("--no-out",0);
 "starting ChartmapTest.sing";
 system("--no-out",1);
 <"ChartmapTest.sing";

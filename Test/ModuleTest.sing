@@ -1,0 +1,49 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+
+ring R=0,(x,y,z),dp;
+
+matrix mm[3][1]=x,y,z;
+module m=mm;
+Module M=m;
+ValueOf(M);
+RingOf(M);
+ncols(M);
+nrows(M);
+M;
+
+
+ring S=0,(a,b),dp;
+matrix nn[2][2]=a,0,0,b;
+module n=nn;
+Module N=n;
+N;
+
+vector v=[a+b,a+1];
+vector w=[a*b,a-b];
+vector u=[a2-b,0];
+
+Vector V=v;
+Vector W=w,b;
+Vector U=u,a+b;
+V;W;U;
+V+W;
+V+U;
+U-W+V;
+denominator(V);
+denominator(W);
+denominator(U);
+nrows(V);
+nrows(U);
+string(V);
+string(W);
+string(U);
+
+RingOf(V);
+ValueOf(V);
+
+ModuleMap f=makeModuleMap(M,N,list(V,W,U));

@@ -177,6 +177,13 @@ static proc mod_init()
   system("install","morphism","*",MorphismCompMorphism,2);
   system("install","iterativeChart","print",printItChart,1);
   system("install","iterativeScheme","print",printItScheme,1);
+  system("install","Vector","print",printVector,1);
+  system("install","Vector","=",makeVector,1);
+  system("install","Vector","+",addVector,2);
+  system("install","Vector","-",subVector,2);
+  system("install","Vector","string",stringVector,1);
+  system("install","Vector","denominator",DenV,1);
+  system("install","Vector","nrows",NrowsV,1);
   system("install","Module","print",printModule,1);
   system("install","Module","nrows",NrowsM,1);
   system("install","Module","ncols",NcolsM,1);
@@ -1669,6 +1676,117 @@ proc printProjRatMap(projRatMap phi)
     st;
 	kill n,m,i,k,R,S,st;	
 }
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// Vector Stuff
+////////////////////////////////////////////////////////////////////////////////////////
+
+ proc makeVector(vector V, list #)
+ {
+	Vector result;
+	result.in=basering;
+	result.value=V;
+	if(size(#)==0)
+	{
+		result.den=1;
+	}
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="poly")
+		{
+			result.den=#[1];
+		}else{
+			ERROR("Wrong additional input!");
+		}
+	}
+	return(result);
+ }
+
+
+static proc NrowsV(Vector V)
+{
+	def R=RingOf(V);
+	setring R;
+	int n=nrows(ValueOf(V));
+	kill R;
+	return(n);
+}
+
+
+static proc DenV(Vector V)
+{
+	return(V.den);
+}
+
+
+static proc stringVector(Vector V)
+{
+	def R=RingOf(V);
+	setring R;
+	int n=nrows(V);
+	vector v=ValueOf(V);
+	poly p=denominator(V);
+	string st="[";
+	for(int i=1; i<=n; i=i+1)
+	{
+		if(p==1)
+		{
+			st=st+string(v[i]);
+		}else{
+			st=st+string(v[i])+"/"+string(p);
+		}
+		if(i<n)
+		{
+			st=st+",";
+		}
+	}
+	st=st+"]";
+	kill p,v;
+	kill R,i,n;
+	return(st);
+}
+
+
+static proc printVector(Vector V)
+{
+	string(V);
+}
+
+
+static proc addVector(Vector V, Vector W)
+{
+	def R=RingOf(V);
+	setring R;
+	if(R!=RingOf(W))
+	{   ERROR("Vectors not defined in the same ring!");}
+	vector v=ValueOf(V);
+	vector w=ValueOf(W);
+	poly p=denominator(V);
+	poly q=denominator(W);
+	Vector result=(v*q+w*p),(p*q);
+	kill v,w,p,q,R;
+	return(result);
+}
+
+
+static proc subVector(Vector V, Vector W)
+{
+	def R=RingOf(V);
+	setring R;
+	if(R!=RingOf(W))
+	{   ERROR("Vectors not defined in the same ring!");}
+	vector v=ValueOf(V);
+	vector w=ValueOf(W);
+	poly p=denominator(V);
+	poly q=denominator(W);
+	Vector result=(v*q-w*p),(p*q);
+	kill v,w,p,q,R;
+	return(result);
+}
+
 
 
 
