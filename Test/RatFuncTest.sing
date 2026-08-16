@@ -1,0 +1,32 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+ring R=0,(x,y,z),dp;
+ratFunc f=x2+y2,z;
+ratFunc g=x-z,1;
+ratFunc h=zx2+zy2,z2;
+f;g;h;
+SimplifyRatFunc(f);
+SimplifyRatFunc(h);
+string(f);
+string(g);
+RingOf(f);
+numerator(f);
+denominator(f);
+denominator(g);
+f+g;
+g-f;
+f*g;
+f/g;
+f^4;
+g^(-3);
+diff(f,1);
+diff(f,2);
+diff(f,3);
+f==g;
+f==h;
+f!=g;
+f!=h;

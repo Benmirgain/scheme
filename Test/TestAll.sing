@@ -15,6 +15,11 @@ system("--no-out",1);
 <"ChartTest.sing";
 
 system("--no-out",0);
+"starting RatFuncTest.sing";
+system("--no-out",1);
+<"RatFuncTest.sing";
+
+system("--no-out",0);
 "starting ModuleTest.sing";
 system("--no-out",1);
 <"ModuleTest.sing";

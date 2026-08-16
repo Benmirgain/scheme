@@ -159,7 +159,10 @@ static proc mod_init()
   system("install","scheme","dim",SchemeDimension,1);
   system("install","ratFunc","=",makeratFunc,1);
   system("install","ratFunc","print",printratFunc,1);
-  system("install","ratFunc","string",stringratFunc,4);
+  system("install","ratFunc","string",stringratFunc,1);
+  system("install","ratFunc","numerator",NumR,1);
+  system("install","ratFunc","denominator",DenR,1);
+  system("install","ratFunc","diff",diffRatFunc,2);
   system("install","ratFunc","+",addratFunc,2);
   system("install","ratFunc","-",subratFunc,2);
   system("install","ratFunc","*",multratFunc,2); 
@@ -1844,6 +1847,13 @@ proc makeModuleMap(Module preim, Module im, list rules, list #)
 		if(typeof(rules[i])!="Vector")
 		{
 			ERROR("Wrong input!");
+		}else{
+			if(RingOf(rules[i])!=RingOf(im))
+			{   ERROR("Wrong input!");}
+			else{
+				if(nrows(rules[i])>nrows(im))
+				{   ERROR("Wrong input!");}
+			}
 		}
 		result.rules[i]=rules[i];
 	}
@@ -3964,10 +3974,8 @@ if(size(#)==0)
 } else {
    if(#[1]==0)
    {   ERROR("Denominator cannot be 0!");}
-   poly g=gcd(num,#[1]);
-   g=g*leadcoef(#[1]);
-   r.num=num/g;
-   r.den=#[1]/g;
+   r.num=num;
+   r.den=#[1];
 }
 return(r);
 }
@@ -3990,6 +3998,25 @@ F==H;
 1/(y*F)==H;
 }
 
+proc SimplifyRatFunc(ratFunc F)
+"USAGE: SimplifyRatFunc(F); F ratFunc
+RETURN: Simplified rational function F
+EXAMPLE: example SimplifyRatFunc; creates an example"
+{
+   	def S=RingOf(F);
+   	setring S;
+	poly num=numerator(F);
+	poly den=denominator(F);
+   	poly g=gcd(num,den);
+   	g=g*leadcoef(den);
+	num=num/g;
+	den=den/g;
+   	ratFunc result=num,den;
+   	kill g,num,den;
+	kill S;
+   	return(result);
+}
+
 static proc RingRF(ratFunc F)
 {
 	return(F.r_num);
@@ -3998,29 +4025,44 @@ static proc RingRF(ratFunc F)
 // Print routine for ratFunc
 static proc printratFunc(ratFunc r)
 {
-   def S=RingOf(r);
-   setring S;
-   if(r.den==1)
-   {
-      string(r.num);   
-   } else {
-      string(r.num)+" / "+string(r.den);
-   }
+	r=SimplifyRatFunc(r);
+   	def S=RingOf(r);
+   	setring S;
+   	if(r.den==1)
+   	{
+    	string(r.num);   
+   	}else{
+      	string(r.num)+" / "+string(r.den);
+   	}
 }
 
 
 // Gives ratFunc as a string
 static proc stringratFunc(ratFunc r)
 {
-   def S=RingOf(r);
-   setring S;
-   if(r.den==1)
-   {
-      string st=string(r.num);   
-   } else {
-      string st=string(r.num)+" / "+string(r.den);
-   }
-   return(st);
+	r=SimplifyRatFunc(r);
+   	def S=RingOf(r);
+   	setring S;
+   	if(r.den==1)
+   	{
+      	string st=string(r.num);   
+   	} else {
+      	string st=string(r.num)+" / "+string(r.den);
+   	}
+	kill S;
+   	return(st);
+}
+
+
+static proc NumR(ratFunc r)
+{
+   return(r.num);
+}
+
+
+static proc DenR(ratFunc r)
+{
+   return(r.den);
 }
 
 
@@ -4100,6 +4142,22 @@ static proc expratFunc(ratFunc r, int n)
 	  rexpn=r.den^(-n),r.num^(-n);
    }
    return(rexpn);
+}
+
+
+static proc diffRatFunc(ratFunc f, int k)
+{
+	def R=RingOf(f);
+	setring R;
+	if((k>nvars(R))||(k<=0))
+	{   ERROR("Integer outside of valid range!");}
+	else{
+		poly df=diff(f.num,var(k))*f.den-diff(f.den,var(k))*f.num;
+		ratFunc result=df,(f.den)^2;
+		kill df;
+		kill R;
+		return(result);
+	}
 }
 
 
