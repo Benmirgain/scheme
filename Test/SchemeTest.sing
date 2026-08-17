@@ -9,3 +9,6 @@ scheme X=makeProjScheme(ideal(x2-zy));
 scheme Y=makeAffineScheme(ideal(x2-1,zy+1));
 X;
 dim(X);
+
+
+scheme Z=Grassmannian(4,2);

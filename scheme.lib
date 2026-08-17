@@ -1818,10 +1818,23 @@ static proc subVector(Vector V, Vector W)
 	poly p=denominator(V);
 	poly q=denominator(W);
 	Vector result=(v*q-w*p),(p*q);
-	kill v,w,p,q,R;
+	kill v,w,p,q;
+	kill R;
 	return(result);
 }
 
+
+static proc RFmultV(ratFunc f, Vector V)
+{
+	def R=RingOf(V);
+	setring R;
+	vector v=numerator(f)*ValueOf(V);
+	poly den=denominator(f)*denominator(V);
+	Vector result=v,den;
+	kill v,den;
+	kill R;
+	return(result);
+}
 
 
 
@@ -1910,7 +1923,12 @@ proc makeSheaf(list cover, list maps, def space, list #)
 	coherentSheaf result;
 	result.cover=cover;
 	result.modulemaps=maps;
-	result.space=space;
+	if(typeof(space)!="scheme" && typeof(space)!="iterativeScheme")
+	{
+		ERROR("Wrong input!");
+	}else{
+		result.space=space;
+	}
 	if(size(#)==1)
 	{
 		if(typeof(#[1])=="AttribTable")
@@ -1964,8 +1982,10 @@ proc CotangentSheaf(scheme X)
 				Vector V=[0];
 				for(l=1;l<=nvars(R);l=l+1)
 				{
-					dr=SimplifyRatFunc(diff(r,l));
-					V=V+makeVector(numerator(dr)*gen(l),denominator(dr));
+					dr=diff(r,l);
+					poly den=denominator(dr);
+					V=V+makeVector(numerator(dr)*gen(l),den);
+					kill den;
 				}
 				Rules[k]=V;
 				kill r,V,dr;
@@ -3210,9 +3230,8 @@ EXAMPLE: example makeToricVariety; shows an example"
 
 
 
-static proc orderedSubsequence(int n, int k)
+proc orderedSubsequence(int n, int k)
 {
-	list result;
 	if((n<k)||(k<=0)||(n<=0))
 	{
 		return(list());
@@ -3225,24 +3244,51 @@ static proc orderedSubsequence(int n, int k)
 	}
 	if((n>k)&&(k>0))
 	{
-		int i;
-		list L=orderedSubsequence(n-1,k);
-		list K=orderedSubsequence(n-1,k-1);
-		if(k>1)
+		intvec iv=1..k;
+		int i=1;
+		list L=list(iv);
+		iv=NextInSequence(iv,n);
+		while(iv!=1..k)
 		{
-		for(i=1; i<=size(K); i=i+1)
-		{
-			K[i]=K[i],n;
+			i=i+1;
+			L[i]=iv;
+			iv=NextInSequence(iv,n);
 		}
-		}else{
-			intvec iv=n;
-			K=list(iv);
-			kill iv;
-		}
-		kill i;
-		return(L+K);
-		kill L,K;
+		kill i,iv;
+		return(L);
 	}
+}
+
+
+static proc NextInSequence(intvec iv, int n)
+{
+	int i=1;
+	int done=0;
+	while(i<=size(iv) && !done)
+	{
+		if(i<size(iv))
+		{
+			if(iv[i+1]==iv[i]+1)
+			{
+				iv[i]=i;
+				i=i+1;
+			}else{
+				iv[i]=iv[i]+1;
+				done=1;
+			}
+		}else{
+			if(iv[i]<n)
+			{
+				iv[i]=iv[i]+1;
+				done=1;
+			}else{
+				iv[i]=i;
+				done=1;
+			}
+		}
+	}
+	kill i,done;
+	return(iv);
 }
 
 
@@ -4132,6 +4178,7 @@ static proc stringratFunc(ratFunc r)
 	r=SimplifyRatFunc(r);
    	def S=RingOf(r);
    	setring S;
+	string st;
    	if(r.num==0)
 	{
 		st=string(0);
@@ -4178,7 +4225,14 @@ static proc notequalratFunc(ratFunc F, ratFunc G)
 
 
 // Multiplication of ratFuncs
-static proc multratFunc(ratFunc r, ratFunc q)
+static proc multratFunc()
+{
+	branchTo("ratFunc","ratFunc",RFmultRF);
+	branchTo("ratFunc","Vector",RFmultV);
+	ERROR("Only 'ratFunc' * 'ratFunc' or 'ratFunc' *  'Vector' is supported!");
+}
+
+static proc RFmultRF(ratFunc r, ratFunc q)
 {
    def SS=RingOf(r);
    setring SS;
