@@ -191,6 +191,7 @@ static proc mod_init()
   system("install","Module","nrows",NrowsM,1);
   system("install","Module","ncols",NcolsM,1);
   system("install","Module","=",makeModule,1);
+  system("install","ModuleMap","print",printModuleMap,1);
 }
 
 
@@ -321,6 +322,7 @@ EXAMPLE: example PreimageSpace; shows an example"
 	branchTo("morphism",PreimageSpaceTemplate);
 	branchTo("affRatMap",PreimageSpaceTemplate);
 	branchTo("projRatMap",PreimageSpaceTemplate);
+	branchTo("ModuleMap",PreimageSpaceTemplate);
 	ERROR("Wrong input!");
 }
 example
@@ -349,6 +351,7 @@ EXAMPLE: example ImageSpace; shows an example"
 	branchTo("morphism",ImageSpaceTemplate);
 	branchTo("affRatMap",ImageSpaceTemplate);
 	branchTo("projRatMap",ImageSpaceTemplate);
+	branchTo("ModuleMap",ImageSpaceTemplate);
 	ERROR("Wrong input!");
 }
 example
@@ -395,6 +398,25 @@ EXAMPLE: example Maps; shows an example"
 	branchTo("iterativeScheme",MapsTemplate);
 	branchTo("coherentSheaf",MapsOfSheaf);
 	ERROR("Wrong input!");
+}
+
+
+static proc RulesTemplate(def f)
+{
+	return(f.ratFuncs);
+}
+
+proc RulesOf()
+"USAGE: RulesOf(f); chartmap/affRatMap/projRatMap/morphism/ModuleMap f
+RETURN: A list of the rules of the given map
+EXAMPLE: example RulesOf ; shows an example"
+{
+	branchTo("chartmap",RulesTemplate);
+	branchTo("affRatMap",RulesTemplate);
+	branchTo("projRatMap",RulesTemplate);
+	branchTo("morphism",RulesM);
+	branchTo("ModuleMap",RulesMM);
+	ERROR("Wrong Inputs!");
 }
 
 
@@ -1883,25 +1905,39 @@ static proc printModule(Module M)
 proc makeModuleMap(Module preim, Module im, list rules, list #)
 {
 	ModuleMap result;
+	int i,j;
 	result.preim=preim;
 	result.im=im;
-	if(size(rules)!=nrows(preim))
-	{   ERROR("Wrong input!");}
-	for(int i=1; i<=size(rules); i=i+1)
+	for(i=1; i<=size(rules); i=i+1)
 	{
-		if(typeof(rules[i])!="Vector")
+		if(typeof(rules[i])!="list")
 		{
 			ERROR("Wrong input!");
 		}else{
-			if(RingOf(rules[i])!=RingOf(im))
+			if(size(rules[i])!=nrows(preim))
 			{   ERROR("Wrong input!");}
 			else{
-				if(nrows(rules[i])>nrows(im))
-				{   ERROR("Wrong input!");}
+				result.rules[i]=list();
 			}
 		}
-		result.rules[i]=rules[i];
+
+		for(j=1; j<=size(rules[i]); j=j+1)
+		{
+			if(typeof(rules[i][j])!="Vector")
+			{
+				ERROR("Wrong input!");
+			}else{
+				if(RingOf(rules[i][j])!=RingOf(im))
+				{   ERROR("Wrong input!");}
+				else{
+					if(nrows(rules[i][j])>nrows(im))
+					{   ERROR("Wrong input!");}
+				}
+			}
+			result.rules[i][j]=rules[i][j];
+		}
 	}
+	kill i,j;
 	if(size(#)==1)
 	{
 		if(typeof(#[1])=="AttribTable")
@@ -1913,6 +1949,62 @@ proc makeModuleMap(Module preim, Module im, list rules, list #)
 	}
 	return(result);
 }
+
+
+static proc RulesMM(ModuleMap f)
+{
+	return(f.rules);
+}
+
+
+static proc printModuleMap(ModuleMap f)
+{
+	int i,j,k;
+	list Rules=RulesOf(f);
+	for(i=1; i<=size(Rules); i=i+1)
+	{
+		"Map "+string(i)+":";
+		for(j=1; j<=size(Rules[i]); j=j+1)
+		{
+			string st;
+			st="   gen("+string(j)+")  ------->  ";
+			def R=RingOf(Rules[i][j]);
+			setring R;
+			vector v=ValueOf(Rules[i][j]);
+			poly p=denominator(Rules[i][j]);
+			int first=1;
+			for(k=1; k<=nrows(v); k=k+1)
+			{
+				if(v[k]!=0)
+				{
+					if(!first)
+					{
+						st=st+"+";
+					}else{
+						first=0;
+					}
+
+					poly g=gcd(v[k],p)*leadcoef(p);
+					poly pg=p/g;
+					poly vg=v[k]/g;
+					if(pg==1)
+					{
+						st=st+"("+string(vg)+")*gen("+string(k)+")";
+					}else{
+						st=st+"("+string(vg)+")/("+string(pg)+")*gen("+string(k)+")";
+					}
+					kill g,pg,vg;
+				}
+			}
+			st;
+			kill v,p;
+			kill R,st,first;
+		}
+	}
+	kill i,j,k;
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Sheaf Stuff
@@ -1953,7 +2045,7 @@ proc CotangentSheaf(scheme X)
 	list Cover,Maps;
 	list XCover=CoverOf(X);
 	list XMaps=MapsOf(X);
-	int i,j,k,l;
+	int i,j,k,l,h;
 	for(i=1;i<=size(XCover);i=i+1)
 	{
 		def R=RingOf(XCover[i]);
@@ -1972,26 +2064,32 @@ proc CotangentSheaf(scheme X)
 			def R=RingOf(XCover[j]);
 			setring R;
 			chartmap phi=XMaps[j][i];
+			list ratFuncs=RulesOf(phi);
 			Module Preim=Cover[i];
 			Module Im=Cover[j];
 			list Rules;
-			for(k=1;k<=size(phi.ratFuncs[1]);k=k+1)
+			for(h=1; h<=size(ratFuncs); h=h+1)
 			{
-				ratFunc r=phi.ratFuncs[1][k];
-				ratFunc dr;
-				Vector V=[0];
-				for(l=1;l<=nvars(R);l=l+1)
+				Rules[h]=list();
+				for(k=1;k<=size(ratFuncs[h]);k=k+1)
 				{
-					dr=diff(r,l);
-					poly den=denominator(dr);
-					V=V+makeVector(numerator(dr)*gen(l),den);
-					kill den;
+					ratFunc r=ratFuncs[h][k];
+					ratFunc dr;
+					Vector V=[0];
+					for(l=1;l<=nvars(R);l=l+1)
+					{
+						dr=diff(r,l);
+						poly den=denominator(dr);
+						V=V+makeVector(numerator(dr)*gen(l),den);
+						kill den;
+					}
+					Rules[h][k]=V;
+					kill r,V,dr;
 				}
-				Rules[k]=V;
-				kill r,V,dr;
 			}
+			
 			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
-			kill Preim,Im,Rules,phi;
+			kill Preim,Im,Rules,ratFuncs,phi;
 			kill R;
 		}
 	}
@@ -3230,7 +3328,7 @@ EXAMPLE: example makeToricVariety; shows an example"
 
 
 
-proc orderedSubsequence(int n, int k)
+static proc orderedSubsequence(int n, int k)
 {
 	if((n<k)||(k<=0)||(n<=0))
 	{
@@ -4843,6 +4941,12 @@ morphism psi=X,Y,L;
 PreimageSpace(psi).cover;
 ImageSpace(psi).cover;
 psi.chartmaps;
+}
+
+
+static proc RulesM(morphism f)
+{
+	return(f.chartmaps);
 }
 
 

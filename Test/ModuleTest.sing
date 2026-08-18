@@ -48,4 +48,5 @@ string(U);
 RingOf(V);
 ValueOf(V);
 
-ModuleMap f=makeModuleMap(M,N,list(V,W,U));
+ModuleMap f=makeModuleMap(M,N,list(list(V,W,U)));
+f;
