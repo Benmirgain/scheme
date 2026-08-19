@@ -192,6 +192,7 @@ static proc mod_init()
   system("install","Module","ncols",NcolsM,1);
   system("install","Module","=",makeModule,1);
   system("install","ModuleMap","print",printModuleMap,1);
+  system("install","coherentSheaf","wedge",WedgeProdSheaf,2);
 }
 
 
@@ -416,6 +417,25 @@ EXAMPLE: example RulesOf ; shows an example"
 	branchTo("projRatMap",RulesTemplate);
 	branchTo("morphism",RulesM);
 	branchTo("ModuleMap",RulesMM);
+	ERROR("Wrong Inputs!");
+}
+
+
+
+static proc SpaceTemplate(def X)
+{
+	return(X.space);
+}
+
+proc SpaceOf()
+"USAGE: RulesOf(D); WeilDivisor/CartierDivisor/coherentSheaf D
+RETURN: The space over which D is defined
+EXAMPLE: example SpaceOf ; shows an example"
+{
+	branchTo("WeilDivisor",SpaceTemplate);
+	branchTo("CartierDivisor",SpaceTemplate);
+	branchTo("RatSection",SpaceTemplate);
+	branchTo("coherentSheaf",SpaceTemplate);
 	ERROR("Wrong Inputs!");
 }
 
@@ -1874,6 +1894,16 @@ proc makeModule(module M)
 }
 
 
+proc ZeroModule()
+{
+	Module result;
+	matrix m[0][0];
+	result=module(m);
+	kill m;
+	return(result);
+}
+
+
 static proc NrowsM(Module M)
 {
 	def R=RingOf(M);
@@ -2040,12 +2070,57 @@ static proc MapsOfSheaf(coherentSheaf F)
 }
 
 
+proc StructureSheaf(scheme X)
+{
+	list Cover,Maps;
+	int i,j;
+	list Xcover=CoverOf(X);
+	list Xmaps=MapsOf(X);
+
+	for(i=1; i<=size(Xcover); i=i+1)
+	{
+		def R=RingOf(Xcover[i]);
+		setring R;
+		matrix m[1][0];
+		Cover[i]=makeModule(module(m));
+		kill m;
+		kill R;
+	}
+
+	for(i=1; i<=size(Cover); i=i+1)
+	{
+		Maps[i]=list();
+		for(j=1; j<=size(Cover); j=j+1)
+		{
+			def R=RingOf(Cover[j]);
+			setring R;
+			list Rules;
+
+			int n=size(RulesOf(Xmaps[j][i]));
+			for(int k=1; k<=n; k=k+1)
+			{
+				Rules[k]=list(makeVector(gen(1)));
+			}
+
+			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+
+			kill R,Rules,n,k;
+		}
+	}
+
+	coherentSheaf result=makeSheaf(Cover,Maps,X);
+	kill Cover,Maps,Xcover,Xmaps,i,j;
+	return(result);
+}
+
+
 proc CotangentSheaf(scheme X)
 {
 	list Cover,Maps;
 	list XCover=CoverOf(X);
 	list XMaps=MapsOf(X);
 	int i,j,k,l,h;
+
 	for(i=1;i<=size(XCover);i=i+1)
 	{
 		def R=RingOf(XCover[i]);
@@ -2095,8 +2170,312 @@ proc CotangentSheaf(scheme X)
 	}
 
 	coherentSheaf result=makeSheaf(Cover,Maps,X);
-	kill Cover,Maps,XCover,XMaps,i,j,k,l;
+	kill Cover,Maps,XCover,XMaps,i,j,k,l,h;
 	return(result);
+}
+
+
+proc Twist(coherentSheaf F, int d)
+{
+	def X=SpaceOf(F);
+	list Cover=CoverOf(F);
+	list Fmaps=MapsOf(F);
+	list Maps;
+	if(!isAttribute(X,"isprojective"))
+	{
+		ERROR("Sheaf must be defined on a projective scheme!");
+	}else{
+		if(!Attribute(X,"isprojective"))
+		{
+			ERROR("Sheaf must be defined on a projective scheme!");
+		}
+	}
+
+	for(int i=1; i<=size(Cover); i=i+1)
+	{
+		Maps[i]=list();
+		for(int j=1; j<=size(Cover); j=j+1)
+		{
+			list Rules;
+			list fRules=RulesOf(Fmaps[i][j]);
+			def R=RingOf(Cover[j]);
+			setring R;
+			ratFunc p=1;
+			if(i<j){p=var(i);}
+			if(i>j){p=var(i-1);}
+			p=p^d;
+
+			for(int k=1; k<=size(fRules); k=k+1)
+			{
+				Rules[k]=list();
+				for(int l=1; l<=size(fRules[k]); l=l+1)
+				{
+					Rules[k][l]=p*fRules[k][l];
+				}
+				kill l;
+			}
+			kill k;
+
+			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+			kill Rules,fRules,R,p;
+		}
+		kill j;
+	}
+	kill i;
+
+	coherentSheaf result=makeSheaf(Cover,Maps,X);
+	kill Cover,Maps,Fcover,X;
+	return(result);
+}
+
+
+proc TensorProduct(coherentSheaf F,coherentSheaf G)
+{
+	if(SpaceOf(F)!=SpaceOf(G))
+	{
+		ERROR("Sheaves need to be defined over the same space!");
+	}
+	list Cover,Maps;
+	def X=SpaceOf(F);
+	list Xcover=CoverOf(X);
+	list Xmaps=MapsOf(X);
+	list Fcover=CoverOf(F);
+	list Fmaps=MapsOf(F);
+	list Gcover=CoverOf(G);
+	list Gmaps=MapsOf(G);
+	int i,j,k,l,h,a,b;
+
+	for(i=1; i<=size(Xcover); i=i+1)
+	{
+		def R=RingOf(Xcover[i]);
+		setring R;
+		matrix M[nrows(Fcover[i])*nrows(Gcover[i])][nrows(Fcover[i])*ncols(Gcover[i])+ncols(Fcover[i])*nrows(Gcover[i])];
+		int counter=0;
+		for(k=1; k<=ncols(Gcover[i]); k=k+1)
+		{
+			vector v=ValueOf(Gcover[i])[k];
+			for(l=1; l<=nrows(Fcover[i]); l=l+1)
+			{
+				for(h=1; h<=nrows(Gcover[i]); h=h+1)
+				{
+					M[(l-1)*nrows(Gcover[i])+h,counter+l]=v[h];
+				}
+			}
+			counter=counter+nrows(Fcover[i]);
+			kill v;
+		}
+
+		for(k=1; k<=ncols(Fcover[i]); k=k+1)
+		{
+			vector v=ValueOf(Fcover[i])[k];
+			for(l=1; l<=nrows(Gcover[i]); l=l+1)
+			{
+				for(h=1; h<=nrows(Fcover[i]); h=h+1)
+				{
+					M[(h-1)*nrows(Gcover[i])+l,counter+l]=v[h];
+				}
+			}
+			counter=counter+nrows(Gcover[i]);
+			kill v;
+		}
+
+		Cover[i]=makeModule(M);
+		kill M,counter;
+		kill R;
+	}
+
+	for(i=1; i<=size(Cover); i=i+1)
+	{
+		Maps[i]=list();
+		for(j=1; j<=size(Cover); j=j+1)
+		{
+			list Rules;
+			ModuleMap f=Fmaps[i][j];
+			ModuleMap g=Gmaps[i][j];
+			list fRules=RulesOf(f);
+			list gRules=RulesOf(g);
+			def R=RingOf(Cover[j]);
+			setring R;
+
+			for(h=1; h<=size(fRules); h=h+1)
+			{
+				Rules[h]=list();
+				for(k=1; k<=nrows(Fcover[i]); k=k+1)
+				{
+					for(l=1; l<=nrows(Gcover[i]); l=l+1)
+					{
+						vector v=ValueOf(fRules[h][k]);
+						vector w=ValueOf(gRules[h][l]);
+						poly den=denominator(fRules[h][k])*denominator(gRules[h][l]);
+						vector t=0;
+
+						for(a=1; a<=nrows(Fcover[j]); a=a+1)
+						{
+							for(b=1; b<=nrows(Gcover[j]); b=b+1)
+							{
+								t=t+v[a]*w[b]*gen((a-1)*nrows(Gcover[j])+b);
+							}
+						}
+
+						Rules[h][(k-1)*nrows(Gcover[i])+l]=makeVector(t,den);
+
+						kill v,w,den,t;
+					}
+				}
+			}
+			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+			kill Rules,f,g,fRules,gRules,R;
+		}
+	}
+
+	coherentSheaf result=makeSheaf(Cover,Maps,X);
+	kill Cover,Maps,Xcover,Xmaps,Fcover,Fmaps,X,i,j,k,l,h,a,b;
+	return(result);
+}
+
+
+static proc WedgeProdSheaf(coherentSheaf F, int n)
+{
+	if(n<=1)
+	{
+		if(n==1)
+		{
+			return(F);
+		}else{
+			ERROR("Wrong range for integer!");
+		}
+	}else{
+		list Cover,Maps;
+		def X=SpaceOf(F);
+		list Xcover=CoverOf(X);
+		list Xmaps=MapsOf(X);
+		list Fcover=CoverOf(F);
+		list Fmaps=MapsOf(F);
+		list Indices;
+		int i,j,k,l,h,a,b;
+
+		for(i=1; i<=size(Fcover); i=i+1)
+		{
+			def R=RingOf(Fcover[i]);
+			setring R;
+			module FM=ValueOf(Fcover[i]);
+			Indices[i]=orderedSubsequence(nrows(Fcover[i]),n);
+			list SubIndices=orderedSubsequence(nrows(Fcover[i]),n-1);
+			if(size(Indices[i])>=1)
+			{
+				matrix vectors[size(Indices[i])][ncols(Fcover[i])*size(SubIndices)];
+				for(j=1; j<=size(SubIndices); j=j+1)
+				{
+					intvec siv=SubIndices[j];
+
+					for(l=1; l<=size(Indices[i]); l=l+1)
+					{
+						intvec iv=Indices[i][l];
+						int e;
+						int issub=1;
+						int foundplace=0;
+
+						for(a=1; a<=size(iv); a=a+1)
+						{
+							if(foundplace)
+							{
+								if(iv[a]!=siv[a-1])
+								{
+									issub=0;
+								}
+							}else{
+								if(a<size(iv))
+								{
+									if(iv[a]!=siv[a])
+									{
+										e=a-1;
+										foundplace=1;
+									}
+								}else{
+									e=a-1;
+								}
+							}
+						}
+
+						if(issub)
+						{
+							for(k=1; k<=ncols(FM); k=k+1)
+							{
+								poly c=(-1)^e*FM[k][iv[e+1]];
+								vectors[l,(j-1)*ncols(FM)+k]=c;
+								kill c;
+							}
+						}
+
+						kill iv,e,issub,foundplace;
+					}
+
+					kill siv;
+				}
+
+				Cover[i]=makeModule(module(vectors));
+
+				kill vectors;
+			}else{
+				Cover[i]=ZeroModule();
+			}
+		
+			kill FM;
+			kill R,SubIndices;
+		}
+
+		for(i=1; i<=size(Cover); i=i+1)
+		{
+			Maps[i]=list();
+			for(j=1; j<=size(Cover); j=j+1)
+			{
+				list Rules;
+				ModuleMap f=Fmaps[i][j];
+				list fRules=RulesOf(f);
+				def R=RingOf(Cover[j]);
+				setring R;
+
+				for(h=1; h<=size(fRules); h=h+1)
+				{
+					Rules[h]=list();
+				for(k=1; k<=size(Indices[i]); k=k+1)
+				{
+					intvec iv=Indices[i][k];
+					poly den=1;
+					matrix m[nrows(Fcover[j])][size(iv)];
+
+					for(b=1; b<=size(iv); b=b+1)
+					{
+						vector v=ValueOf(fRules[h][iv[b]]);
+						den=den*denominator(fRules[h][iv[b]]);
+						for(a=1; a<=nrows(Fcover[j]); a=a+1)
+						{
+							m[a,b]=v[a];
+						}
+						kill v;
+					}
+
+					vector v;
+					for(l=1; l<=size(Indices[j]); l=l+1)
+					{
+						v=v+det(submat(m,Indices[j][l],1..size(iv)))*gen(l);
+					}
+					Rules[h][k]=makeVector(v,den);
+
+					kill iv,den,v,m;
+				}
+				}
+
+				kill R;
+				Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+				kill f,Rules,fRules;
+			}
+		}
+
+		coherentSheaf result=makeSheaf(Cover,Maps,X);
+		kill Cover,Maps,Xcover,Xmaps,Fcover,Fmaps,Indices,X,i,j,k,l,h,a,b;
+		return(result);
+	}
 }
 
 
