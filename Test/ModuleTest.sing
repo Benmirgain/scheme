@@ -60,9 +60,27 @@ Vector ZV=0;
 ModuleMap f=makeModuleMap(M,N,list(list(V,W,U)));
 f;
 
-
 ModuleMap g=makeModuleMap(FM,ZM,list(list(ZV,ZV,ZV)));
 g;
 
 ModuleMap h=makeModuleMap(ZM,FM,list(list()));
 h;
+
+
+setring S;
+
+Module A=b*gen(1)-a*gen(2);
+Module B=(a2-b2)*gen(1);
+Module H=Hom(A,B);
+H;
+
+setring R;
+chart C=ideal(x2+y2+z2-1);
+Hom(M,FM);
+Hom(M,FM,C,0);
+Hom(FM,M,0);
+Hom(ZM,M);
+Hom(M,ZM);
+
+Dual(M,C);
+Dual(M);

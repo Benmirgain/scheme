@@ -2104,9 +2104,185 @@ static proc printModule(Module M)
 			}
 			kill i;
 		}
+
+		if(isAttribute(M,"isHomWithMaps"))
+		{
+			if(Attribute(M,"isHomWithMaps"))
+			{
+				list Maps=Attribute(M,"Maps");
+				for(int i=1; i<=ngen; i=i+1)
+				{
+					"";
+					"gen("+string(i)+") corresponds to map:";
+					for(int j=1; j<=size(Maps[i]); j=j+1)
+					{
+						"   gen("+string(j)+")  ------->  "+string(ValueOf(Maps[i][j]));
+					}
+					kill j;
+				}
+				kill Maps,i;
+			}
+		}
 	}
 	kill m,ngen,nrel;
 	kill R;
+}
+
+
+proc Hom(Module M, Module N, list #)
+{
+	int savemorphisms=1;
+	def R=RingOf(M);
+	Module result;
+	setring R;
+	ideal I=0;
+	if(R!=RingOf(N)){ERROR("Modules must be from the same ring!");}
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="int"){savemorphisms=#[1];}
+		if(typeof(#[1])=="chart")
+		{
+			I=ValueOf(#[1]);
+		}
+	}
+	if(size(#)==2)
+	{
+		I=simplify(ValueOf(#[1]),2);
+		savemorphisms=#[2];
+	}
+
+	if(nrows(N)*nrows(M)!=0)
+	{
+		module MM=ValueOf(M);
+		module NN=ValueOf(N);
+
+		if(ncols(N)>0)
+		{
+			if(ncols(M)>0)
+			{
+				list L;
+				for(int i=1; i<=ncols(M); i=i+1)
+				{
+					L[i]=NN;
+				}
+				module NN2=dsum(L);
+				kill i,L;
+			}else{
+				matrix m[0][0];
+				module NN2=m;
+				kill m;
+			}
+		}else{
+			matrix m[ncols(M)*nrows(N)][0];
+			module NN2=m;
+			kill m;
+		}
+
+		matrix m[0][0];
+		module Vec=m;
+		kill m;
+		for(int i=1; i<=nrows(M); i=i+1)
+		{
+			for(int j=1; j<=nrows(N); j=j+1)
+			{
+				vector v=0;
+				for(int k=1; k<=ncols(M); k=k+1)
+				{
+					v=v+MM[i,k]*gen((k-1)*nrows(N)+j);
+				}
+				kill k;
+				Vec[ncols(Vec)+1]=v;
+				kill v;
+			}
+			kill j;
+		}
+		kill i;
+		
+		for(int i=1; i<=ncols(NN2); i=i+1)
+		{
+			Vec[ncols(Vec)+1]=NN2[i];
+		}
+		kill i;
+
+		if(I[1]!=0)
+		{
+			module INN;
+			INN=freemodule(ncols(M)*nrows(N));
+			INN=INN*I;
+			for(int i=1; i<=ncols(INN); i=i+1)
+			{
+				Vec[ncols(Vec)+1]=INN[i];
+			}
+			kill i,INN;
+		}
+		kill MM,NN,NN2;
+
+		module linmaps=syz(Vec);
+		kill Vec;
+		for(int i=1; i<=ncols(linmaps); i=i+1)
+		{
+			linmaps[i]=linmaps[i][1..(nrows(M)*nrows(N))];
+		}
+		kill i;
+		if(I[1]!=0)
+		{
+			linmaps=reduce(linmaps,std(I));
+		}
+		linmaps=simplify(linmaps,6);
+
+		result=syz(linmaps);
+		result=simplify(result,2);
+
+		if(savemorphisms)
+		{
+			result=SetAttribute(result,"isHomWithMaps",1);
+			result=SetAttribute(result,"Preim",M);
+			result=SetAttribute(result,"Im",N);
+			list Maps;
+			for(int i=1; i<=ncols(linmaps); i=i+1)
+			{
+				Maps[i]=list();
+				for(int j=1; j<=nrows(M); j=j+1)
+				{
+					vector v;
+					for(int k=1; k<=nrows(N); k=k+1)
+					{
+						v=v+linmaps[i][(j-1)*nrows(N)+k]*gen(k);
+					}
+					kill k;
+					Maps[i][j]=makeVector(v);
+					kill v;
+				}
+				kill j;
+			}
+			kill i;
+			result=SetAttribute(result,"Maps",Maps);
+			kill Maps;
+		}
+		kill linmaps;
+	}else{
+		result=ZeroModule();
+	}
+
+	kill I;
+	kill R,savemorphisms;
+	return(result);
+}
+
+
+proc Dual(Module M, list #)
+{
+	def R=RingOf(M);
+	setring R;
+	if(size(#)==0)
+	{
+		return(Hom(M,FreeModule(1)));
+	}else{
+		if(typeof(#[1])=="chart")
+		{
+			return(Hom(M,FreeModule(1),#[1]));
+		}
+	}
 }
 
 
@@ -2244,7 +2420,34 @@ proc makeSheaf(list cover, list maps, def space, list #)
 }
 
 
-proc DSumModule(list #)
+proc DSum(list #)
+{
+	if(size(#)==0){ERROR("Procedure needs input!");}
+	else{
+		if(typeof(#[1])=="Module")
+		{
+			for(int i=2; i<=size(#); i=i+1)
+			{
+				if(typeof(#[i])!="Module"){ERROR("All inputs must be of the same type!");}
+				if(RingOf(#[1])!=RingOf(#[i])){ERROR("Modules must lie in the same ring!");}
+			}
+			kill i;
+			return(DSumModule(#));
+		}
+		if(typeof(#[1])=="coherentSheaf")
+		{
+			for(int i=2; i<=size(#); i=i+1)
+			{
+				if(typeof(#[i])!="coherentSheaf"){ERROR("All inputs must be of the same type!");}
+			}
+			kill i;
+			return(DSumSheaf(#));
+		}
+	}
+}
+
+
+static proc DSumModule(list #)
 {
 	list L;
 	def R=RingOf(#[1]);
@@ -2499,6 +2702,14 @@ proc CotangentSheaf(scheme X)
 
 	coherentSheaf result=makeSheaf(Cover,Maps,X);
 	kill Cover,Maps,XCover,XMaps,i,j,k,l,h;
+	return(result);
+}
+
+
+static proc DSumSheaf(list #)
+{
+	// To be done
+	coherentSheaf result;
 	return(result);
 }
 
