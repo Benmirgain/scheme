@@ -1947,13 +1947,14 @@ static proc PruneModule(Module M)
 }
 
 
-proc PruneModuleWithTransformation(Module M, list #)
+static proc PruneModuleWithTransformation(Module M, list #)
 {
 	def R=RingOf(M);
 	setring R;
 	module m=ValueOf(M);
 	list ToNew,FromNew;
 	int avoidstd=0;
+	int prunenecessary=0;
 	if(size(#)==1)
 	{
 		if(typeof(#[1])=="int")
@@ -1978,11 +1979,13 @@ proc PruneModuleWithTransformation(Module M, list #)
 				found=1;
 				poly f=1/m[i,k];
 				m[k]=f*m[k];
+				kill f;
 			}
 		}
 
 		if(found)
 		{
+			prunenecessary=1;
 			boolgens[i]=0;
 			deletegens[size(deletegens)+1]=i;
 			deletecols[size(deletecols)+1]=k;
@@ -2003,12 +2006,14 @@ proc PruneModuleWithTransformation(Module M, list #)
 	}
 	kill i;
 
+	if(prunenecessary)
+	{
 	L=m[deletecols];
 	for(int i=1; i<=size(deletecols); i=i+1)
 	{
 		m[deletecols[i]]=0;
 	}
-	kill i,deletecols;
+	kill i;
 
 	int count;
 	for(int i=1; i<=nrows(m); i=i+1)
@@ -2029,7 +2034,7 @@ proc PruneModuleWithTransformation(Module M, list #)
 			kill v;
 		}
 	}
-	kill i,count,L;
+	kill i,count;
 
 	if(ncols(m)>0)
 	{
@@ -2045,11 +2050,16 @@ proc PruneModuleWithTransformation(Module M, list #)
 		FromNew[i]=makeVector(gen(keepgens[i]));
 	}
 	kill i;
-	kill boolgens,keepgens,deletegens;
+	}
 
+	kill boolgens,keepgens,deletegens,deletecols,L;
 	kill m;
 	kill R,avoidstd;
-	return(list(M,ToNew,FromNew));
+	if(prunenecessary){return(list(prunenecessary,M,ToNew,FromNew));}
+	else{
+		kill ToNew,FromNew;
+		return(list(prunenecessary,M));
+	}
 }
 
 
@@ -2278,12 +2288,21 @@ proc PruneSheaf(coherentSheaf F, list #)
 	list Cover;
 	list Maps;
 	list Transforms;
+	intvec prunenecessary=1:size(CoverOf(F));
 	for(int i=1; i<=size(CoverOf(F)); i=i+1)
 	{
 		list L=PruneModuleWithTransformation(CoverOf(F)[i],avoidstd);
-		Cover[i]=L[1];
-		Transforms[i]=list(L[2],L[3]);
-		kill L;
+		if(L[1])
+		{
+			Cover[i]=L[2];
+			Transforms[i]=list(L[3],L[4]);
+			kill L;
+		}else{
+			Cover[i]=L[2];
+			Transforms[i]=list();
+			prunenecessary[i]=0;
+			kill L;
+		}
 	}
 	kill i;
 
@@ -2292,10 +2311,12 @@ proc PruneSheaf(coherentSheaf F, list #)
 		Maps[i]=list();
 		for(int j=1; j<=size(Cover); j=j+1)
 		{
+			if(prunenecessary[i] || prunenecessary[j])
+			{
 			ModuleMap f=MapsOf(F)[i][j];
 			chartmap g=maps(j,i,X);
-			list ToNew=Transforms[j][1];
-			list ToOld=Transforms[i][2];
+			if(prunenecessary[i]){list ToNew=Transforms[j][1];}
+			if(prunenecessary[j]){list ToOld=Transforms[i][2];}
 			list Rules;
 			for(int k=1; k<=size(RulesOf(f)); k=k+1)
 			{
@@ -2305,6 +2326,8 @@ proc PruneSheaf(coherentSheaf F, list #)
 				for(int l=1; l<=nrows(Cover[i]); l=l+1)
 				{
 					def S=RingOf(Cover[j]);
+					if(prunenecessary[j])
+					{
 					setring S;
 					Rules[k][l]=makeVector(0);					
 					def R=RingOf(Cover[i]);
@@ -2321,7 +2344,12 @@ proc PruneSheaf(coherentSheaf F, list #)
 					}
 					kill h,v;
 					kill R;
+					}else{
+						Rules[k][l]=VF[l];
+					}
 
+					if(prunenecessary[i])
+					{
 					setring S;
 					vector v=ValueOf(Rules[k][l]);
 					poly den=denominator(Rules[k][l]);
@@ -2336,6 +2364,7 @@ proc PruneSheaf(coherentSheaf F, list #)
 						}
 					}
 					kill h,v,den;
+					}
 					kill S;
 				}
 				kill l;
@@ -2345,7 +2374,12 @@ proc PruneSheaf(coherentSheaf F, list #)
 			kill k;
 
 			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
-			kill f,g,ToNew,ToOld,Rules;
+			kill f,g,Rules;
+			if(prunenecessary[i]){kill ToNew;}
+			if(prunenecessary[j]){kill ToOld;}
+			}else{
+				Maps[i][j]=MapsOf(F)[i][j];
+			}
 		}
 		kill j;
 	}
