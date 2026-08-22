@@ -191,6 +191,8 @@ static proc mod_init()
   system("install","Module","nrows",NrowsM,1);
   system("install","Module","ncols",NcolsM,1);
   system("install","Module","=",makeModule,1);
+  system("install","Module","simplify",SimplifyModule,2);
+  system("install","Module","prune",PruneModule,1);
   system("install","ModuleMap","print",printModuleMap,1);
   system("install","coherentSheaf","wedge",WedgeProdSheaf,2);
 }
@@ -1896,11 +1898,158 @@ proc makeModule(module M)
 
 proc ZeroModule()
 {
-	Module result;
 	matrix m[0][0];
-	result=module(m);
+	Module result=module(m);
 	kill m;
 	return(result);
+}
+
+
+proc FreeModule(int n)
+{
+	if(n<0){ERROR("Input must be >=0!");}
+	matrix m[n][0];
+	Module result=module(m);
+	kill m;
+	return(result);
+}
+
+
+static proc SimplifyModule(Module M, int a)
+{
+	def R=RingOf(M);
+	setring R;
+	module m=ValueOf(M);
+	m=simplify(m,a);
+	if(m[1]==0)
+	{
+		matrix n[nrows(m)][0];
+		M=module(n);
+		kill n;
+	}else{
+		M=m;
+	}
+	kill m;
+	kill R;
+	return(M);
+}
+
+
+static proc PruneModule(Module M)
+{
+	def R=RingOf(M);
+	setring R;
+	module m=prune(ValueOf(M));
+	M=m;
+	kill m;
+	kill R;
+	return(M);
+}
+
+
+proc PruneModuleWithTransformation(Module M, list #)
+{
+	def R=RingOf(M);
+	setring R;
+	module m=ValueOf(M);
+	list ToNew,FromNew;
+	int avoidstd=0;
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="int")
+		{  avoidstd=#[1];}
+		else{  ERROR("Wrong additional input!");}
+	}
+
+	intvec boolgens=1:nrows(m);
+	intvec keepgens=1:0;
+	intvec deletegens=1:0;
+	intvec deletecols=1:0;
+	list L;
+	for(int i=1; i<=nrows(m); i=i+1)
+	{
+		int k=0;
+		int found=0;
+		while(k<=(ncols(m)-1) && !found)
+		{
+			k=k+1;
+			if(deg(m[i,k])==0)
+			{  
+				found=1;
+				poly f=1/m[i,k];
+				m[k]=f*m[k];
+			}
+		}
+
+		if(found)
+		{
+			boolgens[i]=0;
+			deletegens[size(deletegens)+1]=i;
+			deletecols[size(deletecols)+1]=k;
+			for(int j=1; j<=ncols(m); j=j+1)
+			{
+				if(j!=k)
+				{
+					m[j]=m[j]-m[j][i]*m[k];
+				}
+			}
+			kill j;
+		}else{
+			keepgens[size(keepgens)+1]=i;
+			boolgens[i]=size(keepgens);
+		}
+
+		kill k,found;
+	}
+	kill i;
+
+	L=m[deletecols];
+	for(int i=1; i<=size(deletecols); i=i+1)
+	{
+		m[deletecols[i]]=0;
+	}
+	kill i,deletecols;
+
+	int count;
+	for(int i=1; i<=nrows(m); i=i+1)
+	{
+		if(boolgens[i])
+		{
+			ToNew[i]=makeVector(gen(boolgens[i]));
+		}else{
+			count=count+1;
+			vector v;
+			for(int j=1; j<=nrows(m); j=j+1)
+			{
+				if(boolgens[j])
+				{  v=-L[count][j]*gen(boolgens[j]);}
+			}
+			kill j;
+			ToNew[i]=makeVector(v);
+			kill v;
+		}
+	}
+	kill i,count,L;
+
+	if(ncols(m)>0)
+	{
+		matrix mm=m;
+		mm=submat(mm,keepgens,1..ncols(m));
+		m=mm;
+		M=m;
+		kill mm;
+	}
+	M=simplify(M,2);
+	for(int i=1; i<=nrows(m); i=i+1)
+	{
+		FromNew[i]=makeVector(gen(keepgens[i]));
+	}
+	kill i;
+	kill boolgens,keepgens,deletegens;
+
+	kill m;
+	kill R,avoidstd;
+	return(list(M,ToNew,FromNew));
 }
 
 
@@ -1927,7 +2076,26 @@ static proc printModule(Module M)
 {
 	def R=RingOf(M);
 	setring R;
-	print(ValueOf(M));
+	module m=ValueOf(M);
+	int ngen=nrows(M);
+	int nrel=ncols(M);
+	if(ngen==0)
+	{
+		"Zero Module";
+	}else{
+		if(nrel==0)
+		{
+			"Free Module with "+string(ngen)+" generators";
+		}else{
+			"Module with "+string(ngen)+" generators with the relations:";
+			for(int i=1; i<=nrel; i=i+1)
+			{
+				string(m[i])+"=0";
+			}
+			kill i;
+		}
+	}
+	kill m,ngen,nrel;
 	kill R;
 }
 
@@ -1994,6 +2162,7 @@ static proc printModuleMap(ModuleMap f)
 	for(i=1; i<=size(Rules); i=i+1)
 	{
 		"Map "+string(i)+":";
+		if(size(Rules[i])==0){"   0  ------->  0";}
 		for(j=1; j<=size(Rules[i]); j=j+1)
 		{
 			string st;
@@ -2001,6 +2170,7 @@ static proc printModuleMap(ModuleMap f)
 			def R=RingOf(Rules[i][j]);
 			setring R;
 			vector v=ValueOf(Rules[i][j]);
+			if(v==0){st=st+"0";}
 			poly p=denominator(Rules[i][j]);
 			int first=1;
 			for(k=1; k<=nrows(v); k=k+1)
@@ -2061,6 +2231,130 @@ proc makeSheaf(list cover, list maps, def space, list #)
 		}
 	}
 	return(result);
+}
+
+
+proc DSumModule(list #)
+{
+	list L;
+	def R=RingOf(#[1]);
+	setring R;
+	for(int i=1; i<=size(#); i=i+1)
+	{
+		if(nrows(#[i])>0)
+		{
+			if(ncols(#[i])>0)
+			{
+				matrix m=ValueOf(#[i]);
+				L[size(L)+1]=m;
+				kill m;
+			}else{
+				matrix m[nrows(#[i])][1];
+				L[size(L)+1]=m;
+				kill m;
+			}
+		}
+	}
+	kill i;
+
+	Module result=makeModule(module(dsum(L)));
+	result=simplify(result,2);
+	kill R,L;
+	return(result);
+}
+
+
+proc PruneSheaf(coherentSheaf F, list #)
+{
+	int avoidstd=0;
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="int")
+		{  avoidstd=#[1];}
+		else{  ERROR("Wrong additional input!");}
+	}
+
+	def X=SpaceOf(F);
+	list Cover;
+	list Maps;
+	list Transforms;
+	for(int i=1; i<=size(CoverOf(F)); i=i+1)
+	{
+		list L=PruneModuleWithTransformation(CoverOf(F)[i],avoidstd);
+		Cover[i]=L[1];
+		Transforms[i]=list(L[2],L[3]);
+		kill L;
+	}
+	kill i;
+
+	for(int i=1; i<=size(Cover); i=i+1)
+	{
+		Maps[i]=list();
+		for(int j=1; j<=size(Cover); j=j+1)
+		{
+			ModuleMap f=MapsOf(F)[i][j];
+			chartmap g=maps(j,i,X);
+			list ToNew=Transforms[j][1];
+			list ToOld=Transforms[i][2];
+			list Rules;
+			for(int k=1; k<=size(RulesOf(f)); k=k+1)
+			{
+				Rules[k]=list();
+				list RF=RulesOf(g)[k];
+				list VF=RulesOf(f)[k];
+				for(int l=1; l<=nrows(Cover[i]); l=l+1)
+				{
+					def S=RingOf(Cover[j]);
+					setring S;
+					Rules[k][l]=makeVector(0);					
+					def R=RingOf(Cover[i]);
+					setring R;
+					vector v=ValueOf(ToOld[l]);
+					for(int h=1; h<=nrows(v); h=h+1)
+					{
+						if(v[h]!=0)
+						{
+							ratFunc r=v[h];
+							Rules[k][l]=Rules[k][l]+ratFuncCompratFunc(r,RF)*VF[h];
+							kill r;
+						}
+					}
+					kill h,v;
+					kill R;
+
+					setring S;
+					vector v=ValueOf(Rules[k][l]);
+					poly den=denominator(Rules[k][l]);
+					Rules[k][l]=0;
+					for(int h=1; h<=nrows(v); h=h+1)
+					{
+						if(v[h]!=0)
+						{
+							ratFunc r=v[h],den;
+							Rules[k][l]=Rules[k][l]+r*ToNew[h];
+							kill r;
+						}
+					}
+					kill h,v,den;
+					kill S;
+				}
+				kill l;
+
+				kill RF,VF;
+			}
+			kill k;
+
+			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+			kill f,g,ToNew,ToOld,Rules;
+		}
+		kill j;
+	}
+	kill i;
+
+	kill avoidstd;
+	F=makeSheaf(Cover,Maps,X);
+	kill Cover,Maps,X,Transforms;
+	return(F);
 }
 
 
@@ -2224,7 +2518,7 @@ proc Twist(coherentSheaf F, int d)
 	kill i;
 
 	coherentSheaf result=makeSheaf(Cover,Maps,X);
-	kill Cover,Maps,Fcover,X;
+	kill Cover,Maps,Fmaps,X;
 	return(result);
 }
 
@@ -2563,6 +2857,11 @@ EXAMPLE: example makeProjScheme; shows an example"
 	if(!homog(I))
 	{   ERROR("Ideal has to be homogeneous");}
 	def R=basering;
+
+	result=SetAttribute(result,"isprojective",1);
+	chart U=I;
+	result=SetAttribute(result,"HomogeneousIdeal",U);
+	kill U;
 	
 	if(size(#)==0)
 	{

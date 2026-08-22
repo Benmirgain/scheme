@@ -18,9 +18,10 @@ M;
 
 
 ring S=0,(a,b),dp;
-matrix nn[2][2]=a,0,0,b;
+matrix nn[2][3]=a,0,0,b,0,0;
 module n=nn;
 Module N=n;
+N=simplify(N,2);
 N;
 
 vector v=[a+b,a+1];
@@ -48,5 +49,20 @@ string(U);
 RingOf(V);
 ValueOf(V);
 
+setring R;
+Module ZM=ZeroModule();
+ZM;
+Module FM=FreeModule(3);
+FM;
+Vector ZV=0;
+
+
 ModuleMap f=makeModuleMap(M,N,list(list(V,W,U)));
 f;
+
+
+ModuleMap g=makeModuleMap(FM,ZM,list(list(ZV,ZV,ZV)));
+g;
+
+ModuleMap h=makeModuleMap(ZM,FM,list(list()));
+h;
