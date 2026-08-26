@@ -488,6 +488,28 @@ proc SetAttribute(def X, string key, def value)
 }
 
 
+proc AttributeTable(def X)
+{
+	int correctinput=0;
+	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
+		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
+	for(int i=1; i<=size(Typelist); i=i+1)
+	{
+		if(typeof(X)==Typelist[i]){correctinput=1;}
+	}
+	kill i,Typelist;
+
+	if(correctinput)
+	{
+		kill correctinput;
+		return(X.attributes);
+	}else{
+		ERROR("Wrong Input!");
+	}
+}
+
+
 proc Attribute(def X, string key)
 {
 	if(typeof(X)=="AttribTable")
@@ -1887,11 +1909,34 @@ static proc RFmultV(ratFunc f, Vector V)
 ////////////////////////////////////////////////////////////////////////////////////////
 
 
-proc makeModule(module M)
+proc makeModule(module M, list #)
 {
 	Module result;
 	result.in=basering;
 	result.value=M;
+
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="AttribTable")
+		{
+			result.attributes=#[1];
+		}else{
+			ERROR("Wrong input!");
+		}
+	}
+
+	return(result);
+}
+
+
+proc makeGradedModule(module M, intvec grad)
+{
+	Module result;
+	AttribTable A;
+	A=SetAttribute(A,"isgraded",1);
+	A=SetAttribute(A,"grading",grad);
+	result=M,A;
+	kill A;
 	return(result);
 }
 
@@ -1921,17 +1966,18 @@ static proc SimplifyModule(Module M, int a)
 	setring R;
 	module m=ValueOf(M);
 	m=simplify(m,a);
+	Module result;
 	if(m[1]==0)
 	{
 		matrix n[nrows(m)][0];
-		M=module(n);
+		result=module(n),AttributeTable(M);
 		kill n;
 	}else{
-		M=m;
+		result=m,AttributeTable(M);
 	}
 	kill m;
 	kill R;
-	return(M);
+	return(result);
 }
 
 
@@ -2129,6 +2175,63 @@ static proc printModule(Module M)
 }
 
 
+proc DSum(list #)
+{
+	if(size(#)==0){ERROR("Procedure needs input!");}
+	else{
+		if(typeof(#[1])=="Module")
+		{
+			for(int i=2; i<=size(#); i=i+1)
+			{
+				if(typeof(#[i])!="Module"){ERROR("All inputs must be of the same type!");}
+				if(RingOf(#[1])!=RingOf(#[i])){ERROR("Modules must lie in the same ring!");}
+			}
+			kill i;
+			return(DSumModule(#));
+		}
+		if(typeof(#[1])=="coherentSheaf")
+		{
+			for(int i=2; i<=size(#); i=i+1)
+			{
+				if(typeof(#[i])!="coherentSheaf"){ERROR("All inputs must be of the same type!");}
+			}
+			kill i;
+			return(DSumSheaf(#));
+		}
+	}
+}
+
+
+static proc DSumModule(list #)
+{
+	list L;
+	def R=RingOf(#[1]);
+	setring R;
+	for(int i=1; i<=size(#); i=i+1)
+	{
+		if(nrows(#[i])>0)
+		{
+			if(ncols(#[i])>0)
+			{
+				matrix m=ValueOf(#[i]);
+				L[size(L)+1]=m;
+				kill m;
+			}else{
+				matrix m[nrows(#[i])][1];
+				L[size(L)+1]=m;
+				kill m;
+			}
+		}
+	}
+	kill i;
+
+	Module result=makeModule(module(dsum(L)));
+	result=simplify(result,2);
+	kill R,L;
+	return(result);
+}
+
+
 proc Hom(Module M, Module N, list #)
 {
 	int savemorphisms=1;
@@ -2286,6 +2389,41 @@ proc Dual(Module M, list #)
 }
 
 
+static proc GlobalSectionsModule(Module M, chart X)
+{
+	intvec Mgradings=Attribute(M,"gradings");
+	def R=RingOf(M);
+	setring R;
+	ideal I=ValueOf(X);
+	def r=res(ValueOf(M),nvars(R));
+	int reg=regularity(r);
+	kill r;
+
+	ideal m;
+	for(int i=1; i<=nvars(R); i=i+1)
+	{
+		m[i]=var(i)^reg;
+	}
+	kill i;
+	m=m+I;
+	module m=syz(m);
+	kill m;
+	for(int i=1; i<=ncols(mm); i=i+1)
+	{
+		mm[i]=mm[i][1..nvars(R)];
+	}
+	kill i;
+	Module Max=mm;
+	kill mm;
+
+	Module H=Hom(Max,M,1);
+
+	kill I;
+	kill Mgradings,R,Max;
+	return(list(H,reg));
+}
+
+
 proc makeModuleMap(Module preim, Module im, list rules, list #)
 {
 	ModuleMap result;
@@ -2420,63 +2558,6 @@ proc makeSheaf(list cover, list maps, def space, list #)
 }
 
 
-proc DSum(list #)
-{
-	if(size(#)==0){ERROR("Procedure needs input!");}
-	else{
-		if(typeof(#[1])=="Module")
-		{
-			for(int i=2; i<=size(#); i=i+1)
-			{
-				if(typeof(#[i])!="Module"){ERROR("All inputs must be of the same type!");}
-				if(RingOf(#[1])!=RingOf(#[i])){ERROR("Modules must lie in the same ring!");}
-			}
-			kill i;
-			return(DSumModule(#));
-		}
-		if(typeof(#[1])=="coherentSheaf")
-		{
-			for(int i=2; i<=size(#); i=i+1)
-			{
-				if(typeof(#[i])!="coherentSheaf"){ERROR("All inputs must be of the same type!");}
-			}
-			kill i;
-			return(DSumSheaf(#));
-		}
-	}
-}
-
-
-static proc DSumModule(list #)
-{
-	list L;
-	def R=RingOf(#[1]);
-	setring R;
-	for(int i=1; i<=size(#); i=i+1)
-	{
-		if(nrows(#[i])>0)
-		{
-			if(ncols(#[i])>0)
-			{
-				matrix m=ValueOf(#[i]);
-				L[size(L)+1]=m;
-				kill m;
-			}else{
-				matrix m[nrows(#[i])][1];
-				L[size(L)+1]=m;
-				kill m;
-			}
-		}
-	}
-	kill i;
-
-	Module result=makeModule(module(dsum(L)));
-	result=simplify(result,2);
-	kill R,L;
-	return(result);
-}
-
-
 proc PruneSheaf(coherentSheaf F, list #)
 {
 	int avoidstd=0;
@@ -2518,8 +2599,8 @@ proc PruneSheaf(coherentSheaf F, list #)
 			{
 			ModuleMap f=MapsOf(F)[i][j];
 			chartmap g=maps(j,i,X);
-			if(prunenecessary[i]){list ToNew=Transforms[j][1];}
-			if(prunenecessary[j]){list ToOld=Transforms[i][2];}
+			if(prunenecessary[j]){list ToNew=Transforms[j][1];}
+			if(prunenecessary[i]){list ToOld=Transforms[i][2];}
 			list Rules;
 			for(int k=1; k<=size(RulesOf(f)); k=k+1)
 			{
@@ -2529,7 +2610,7 @@ proc PruneSheaf(coherentSheaf F, list #)
 				for(int l=1; l<=nrows(Cover[i]); l=l+1)
 				{
 					def S=RingOf(Cover[j]);
-					if(prunenecessary[j])
+					if(prunenecessary[i])
 					{
 					setring S;
 					Rules[k][l]=makeVector(0);					
@@ -2551,7 +2632,7 @@ proc PruneSheaf(coherentSheaf F, list #)
 						Rules[k][l]=VF[l];
 					}
 
-					if(prunenecessary[i])
+					if(prunenecessary[j])
 					{
 					setring S;
 					vector v=ValueOf(Rules[k][l]);
@@ -2578,8 +2659,8 @@ proc PruneSheaf(coherentSheaf F, list #)
 
 			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
 			kill f,g,Rules;
-			if(prunenecessary[i]){kill ToNew;}
-			if(prunenecessary[j]){kill ToOld;}
+			if(prunenecessary[j]){kill ToNew;}
+			if(prunenecessary[i]){kill ToOld;}
 			}else{
 				Maps[i][j]=MapsOf(F)[i][j];
 			}
@@ -2588,9 +2669,44 @@ proc PruneSheaf(coherentSheaf F, list #)
 	}
 	kill i;
 
+	AttribTable A=AttributeTable(F);
+	if(isAttribute(F,"AssociatedModule"))
+	{
+		list MapsToCover=Attribute(F,"MapsToCover");
+		for(int i=1; i<=size(MapsToCover); i=i+1)
+		{
+			if(prunenecessary[i])
+			{
+				list ToNew=Transforms[i][1];
+				for(int j=1; j<=size(MapsToCover[i]); j=j+1)
+				{
+					def S=RingOf(Cover[i]);
+					setring S;
+					vector v=ValueOf(MapsToCover[i][j]);
+					Vector V=makeVector(0);
+
+					for(int k=1; k<=nrows(v); k=k+1)
+					{
+						V=V+makeratFunc(v[k])*ToNew[k];
+					}
+					kill k;
+
+					MapsToCover[i][j]=V;
+					kill v,V;
+					kill S;
+				}
+				kill j;
+				kill ToNew;
+			}
+		}
+		kill i;
+		A=SetAttribute(A,"MapsToCover",MapsToCover);
+		kill MapsToCover;
+	}
+
 	kill avoidstd;
-	F=makeSheaf(Cover,Maps,X);
-	kill Cover,Maps,X,Transforms;
+	F=makeSheaf(Cover,Maps,X,A);
+	kill Cover,Maps,X,Transforms,A;
 	return(F);
 }
 
@@ -2706,11 +2822,134 @@ proc CotangentSheaf(scheme X)
 }
 
 
+proc AssociatedSheaf(Module M, scheme X)
+{
+	if(!isAttribute(X,"isprojective"))
+	{
+		ERROR("Sheaf must be defined on a projective scheme!");
+	}else{
+		if(!Attribute(X,"isprojective"))
+		{
+			ERROR("Sheaf must be defined on a projective scheme!");
+		}
+	}
+	if(!isAttribute(M,"isgraded"))
+	{
+		ERROR("Module must be graded!");
+	}else{
+		if(!Attribute(M,"isgraded"))
+		{
+			ERROR("Module must be graded!");
+		}
+	}
+	chart U=Attribute(X,"HomogeneousIdeal");
+	if(RingOf(M)!=RingOf(U)){kill U;ERROR("Module must lie in the structure ring of scheme!");}
+	intvec Mgrading=Attribute(M,"grading");
+	def R=RingOf(M);
+	setring R;
+	matrix VM=ValueOf(M);
+
+	list Cover;
+	list Maps;
+	list MapsToCover;
+
+	for(int i=1; i<=size(CoverOf(X)); i=i+1)
+	{
+		def S=RingOf(CoverOf(X)[i]);
+		setring S;
+		ideal I;
+		for(int j=1; j<=nvars(R); j=j+1)
+		{
+			if(j<i){  I[j]=var(j);}
+			if(j==i){ I[j]=1;}
+			if(j>i){  I[j]=var(j-1);}
+		}
+		kill j;
+		map f=R,I;
+		kill I;
+		Cover[i]=makeModule(f(VM));
+		MapsToCover[i]=list();
+		for(int j=1; j<=nrows(M); j=j+1)
+		{
+			MapsToCover[i][j]=makeVector(gen(j));
+		}
+		kill j;
+
+		kill f;
+		kill S;
+	}
+	kill i;
+
+	for(int i=1; i<=size(Cover); i=i+1)
+	{
+		Maps[i]=list();
+		for(int j=1; j<=size(Cover); j=j+1)
+		{
+			list Rules=list(list());
+			def S=RingOf(Cover[j]);
+			setring S;
+			ratFunc r;
+			if(j<i){  r=var(j);}
+			if(j==i){ r=1;}
+			if(j>i){  r=var(j-1);}
+			for(int k=1; k<=nrows(Cover[i]); k=k+1)
+			{
+				Rules[1][k]=r^(-Mgrading[k])*makeVector(gen(k));
+			}
+			kill k;
+			kill S,r;
+
+			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+			kill Rules;
+		}
+		kill j;
+	}
+	kill i;
+	setring R;
+	kill VM;
+
+	coherentSheaf result=makeSheaf(Cover,Maps,X);
+	result=SetAttribute(result,"AssociatedModule",M);
+	result=SetAttribute(result,"MapsToCover",MapsToCover);
+
+	kill U,Cover,Maps,R,MapsToCover;
+	return(result);
+}
+
+
 static proc DSumSheaf(list #)
 {
 	// To be done
 	coherentSheaf result;
 	return(result);
+}
+
+
+proc GlobalSections(coherentSheaf F)
+{
+	def X=SpaceOf(F);
+	if(!isAttribute(X,"isprojective"))
+	{
+		ERROR("Sheaf must be defined on a projective scheme!");
+	}else{
+		if(!Attribute(X,"isprojective"))
+		{
+			ERROR("Sheaf must be defined on a projective scheme!");
+		}
+	}
+	chart U=Attrib(X,"HomogeneousIdeal");
+
+	Module M;
+	if(isAttribute(F,"AssociatedModule"))
+	{
+		M=Attribute(F,"AssociatedModule");
+	}else{
+		//To be done
+	}
+
+	list L=GlobalSectionsModule(M,U);
+
+	kill M,X,U,L;
 }
 
 

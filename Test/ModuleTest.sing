@@ -24,6 +24,19 @@ Module N=n;
 N=simplify(N,2);
 N;
 
+n[1]=3a*gen(1)-b2*gen(2)+a3*gen(3);
+intvec grad=1,0,-1;
+Module NG=makeGradedModule(n,grad);
+NG=simplify(NG,2);
+NG;
+
+kill n; module n;
+n[1]=a*gen(1)-b*gen(2);
+n[2]=b*gen(1)-a*gen(2);
+grad=0,0;
+NG=makeGradedModule(n,grad);
+
+
 vector v=[a+b,a+1];
 vector w=[a*b,a-b];
 vector u=[a2-b,0];
@@ -55,6 +68,7 @@ ZM;
 Module FM=FreeModule(3);
 FM;
 Vector ZV=0;
+DSum(ZM,FM,M);
 
 
 ModuleMap f=makeModuleMap(M,N,list(list(V,W,U)));
