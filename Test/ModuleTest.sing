@@ -39,7 +39,7 @@ NG=makeGradedModule(n,grad);
 
 vector v=[a+b,a+1];
 vector w=[a*b,a-b];
-vector u=[a2-b,0];
+vector u=[a2-b2,0];
 
 Vector V=v;
 Vector W=w,b;
@@ -50,6 +50,13 @@ V+W;
 V+U;
 U-W+V;
 r*W;
+grad=2,2;
+Homog(V,NG);
+Homog(W,NG);
+Homog(U,NG);
+Homog(U,NG,grad);
+HomogDeg(U,NG);
+HomogDeg(U,NG,grad);
 denominator(V);
 denominator(W);
 denominator(U);

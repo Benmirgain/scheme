@@ -1941,6 +1941,103 @@ proc makeGradedModule(module M, intvec grad)
 }
 
 
+proc Homog(Vector V, Module M, list #)
+{
+	if(!isAttribute(M,"isgraded")){ERROR("Module must be graded!");}
+	else{
+		if(Attribute(M,"isgraded"))
+		{
+			if(RingOf(V)!=RingOf(M)){ERROR("Both inputs must be in the same ring!");}
+			def R=RingOf(V);
+			intvec Rgrad=1:nvars(R);
+			if(size(#)==1)
+			{
+				if(typeof(#[1])!="intvec"){ERROR("Additional input must be an intvec");}
+				Rgrad=#[1];
+				if(size(Rgrad)!=nvars(R)){ERROR("Intvec the wrong size!");}
+			}
+			setring R;
+			poly den=denominator(V);
+			~;
+			if(!homog(den,Rgrad))
+			{
+				kill den,Rgrad; kill R;
+				return(0);
+			}
+			vector v=ValueOf(V);
+			intvec Mgrad=Attribute(M,"grading");
+			if(v!=0)
+			{
+				int isgraded=1;
+				int first=1;
+				int d;
+				for(int i=1; i<=nrows(v); i=i+1)
+				{
+					if(v[i]!=0)
+					{
+						if(first)
+						{
+							if(homog(v[i],Rgrad)){d=deg(v[i],Rgrad)+Mgrad[i];}
+							else{isgraded=0;}
+							first=0;
+						}else{
+							if(homog(v[i],Rgrad)){if(d!=(deg(v[i],Rgrad)+Mgrad[i])){isgraded=0;}}
+							else{isgraded=0;}
+						}
+					}
+				}
+				kill i,v,den,Mgrad,Rgrad,d,first;
+				kill R;
+				return(isgraded);
+			}else{
+				kill den,v,Mgrad,Rgrad;
+				kill R;
+				return(1);
+			}
+		}else{
+			ERROR("Module must be graded!");
+		}
+	}
+}
+
+
+proc HomogDeg(Vector V, Module M, list #)
+{
+	if(!Homog(V,M,#)){ERROR("Input must be homogeneous!");}
+	def R=RingOf(V);
+	intvec Rgrad=1:nvars(R);
+	if(size(#)==1)
+	{
+		if(typeof(#[1])!="intvec"){ERROR("Additional input must be an intvec");}
+		Rgrad=#[1];
+		if(size(Rgrad)!=nvars(R)){ERROR("Intvec the wrong size!");}
+	}
+	setring R;
+	poly den=denominator(V);
+	int d=-deg(den,Rgrad);
+	vector v=ValueOf(V);
+	if(v==0){ERROR("Input vector must be non zero!");}
+	intvec Mgrad=Attribute(M,"grading");
+
+	int done=0;
+	int i=1;
+	while(!done && (i<=nrows(v)))
+	{
+		if(v[i]==0)
+		{
+			d=d+deg(v[i],Rgrad)+Mgrad[i];
+			done=1;
+		}else{
+			i=i+1;
+		}
+	}
+
+	kill i,v,den,Mgrad,Rgrad,done;
+	kill R;
+	return(d);
+}
+
+
 proc ZeroModule()
 {
 	matrix m[0][0];
@@ -2533,6 +2630,7 @@ static proc printModuleMap(ModuleMap f)
 ////////////////////////////////////////////////////////////////////////////////
 // Sheaf Stuff
 ////////////////////////////////////////////////////////////////////////////////
+
 
 proc makeSheaf(list cover, list maps, def space, list #)
 {
