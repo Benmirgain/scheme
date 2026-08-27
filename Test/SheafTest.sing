@@ -1,0 +1,25 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+ring R=0,(x,y,z),dp;
+scheme X=makeProjScheme(ideal(x3-y2z));
+coherentSheaf OX=StructureSheaf(X);
+coherentSheaf T=Twist(OX,2);
+T=Twist(OX,-2); 
+coherentSheaf F=CotangentSheaf(X);
+F=wedge(F,2);
+F=TensorProduct(F,T);
+
+
+ring S=0,(a,b),dp;
+scheme Y=makeProjScheme(ideal(0));
+module m;
+m[1]=(a2-b2)*gen(1);
+intvec grad=0;
+Module M=makeGradedModule(m,grad);
+F=AssociatedSheaf(M,Y);
+F=PruneSheaf(F);
+GlobalSections(F);

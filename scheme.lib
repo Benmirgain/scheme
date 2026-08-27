@@ -1958,7 +1958,6 @@ proc Homog(Vector V, Module M, list #)
 			}
 			setring R;
 			poly den=denominator(V);
-			~;
 			if(!homog(den,Rgrad))
 			{
 				kill den,Rgrad; kill R;
@@ -2363,9 +2362,9 @@ proc Hom(Module M, Module N, list #)
 				list L;
 				for(int i=1; i<=ncols(M); i=i+1)
 				{
-					L[i]=NN;
+					L[i]=N;
 				}
-				module NN2=dsum(L);
+				module NN2=ValueOf(DSum(L));
 				kill i,L;
 			}else{
 				matrix m[0][0];
@@ -2488,7 +2487,7 @@ proc Dual(Module M, list #)
 
 static proc GlobalSectionsModule(Module M, chart X)
 {
-	intvec Mgradings=Attribute(M,"gradings");
+	intvec Mgradings=Attribute(M,"grading");
 	def R=RingOf(M);
 	setring R;
 	ideal I=ValueOf(X);
@@ -2503,7 +2502,7 @@ static proc GlobalSectionsModule(Module M, chart X)
 	}
 	kill i;
 	m=m+I;
-	module m=syz(m);
+	module mm=syz(m);
 	kill m;
 	for(int i=1; i<=ncols(mm); i=i+1)
 	{
@@ -3035,19 +3034,65 @@ proc GlobalSections(coherentSheaf F)
 			ERROR("Sheaf must be defined on a projective scheme!");
 		}
 	}
-	chart U=Attrib(X,"HomogeneousIdeal");
+	chart U=Attribute(X,"HomogeneousIdeal");
 
 	Module M;
+	list MapsToCover;
 	if(isAttribute(F,"AssociatedModule"))
 	{
 		M=Attribute(F,"AssociatedModule");
+		MapsToCover=Attribute(F,"MapsToCover");
 	}else{
 		//To be done
 	}
 
 	list L=GlobalSectionsModule(M,U);
+	Module H=L[1];
+	~;
+	list HMaps=Attribute(H,"Maps");
+	list Sections;
 
-	kill M,X,U,L;
+	for(int i=1; i<=size(HMaps); i=i+1)
+	{
+		def R=RingOf(M);
+		Sections[i]=list();
+		for(int j=1; j<=nvars(R); j=j+1)
+		{
+			vector v=ValueOf(HMaps[i][j]);
+			def S=RingOf(CoverOf(F)[j]);
+			setring S;
+			ideal I;
+			for(int k=1; k<=nvars(R); k=k+1)
+			{
+				if(k<j){  I[k]=var(k);}
+				if(k==j){ I[k]=1;}
+				if(k>j){  I[k]=var(k-1);}
+			}
+			kill k;
+			map f=R,I;
+			vector v=f(v);
+			Vector V=0;
+			for(int k=1; k<=nrows(v); k=k+1)
+			{
+				ratFunc r=v[k];
+				V=V+r*MapsToCover[j][k];
+				kill r;
+			}
+			kill k;
+			Sections[i][j]=V;
+
+			kill f,v,V,I;
+			kill S;
+
+			setring R;
+			kill v;
+		}
+		kill j,R;
+	}
+	kill i;
+
+	kill M,X,U,L,H,HMaps,MapsToCover;
+	return(Sections);
 }
 
 
