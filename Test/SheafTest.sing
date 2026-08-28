@@ -5,13 +5,13 @@ if(!defined(Scheme))
 killall();
 
 ring R=0,(x,y,z),dp;
-scheme X=makeProjScheme(ideal(x3-y2z));
+scheme X=makeProjScheme(ideal(x2+y2+z2-1));
 coherentSheaf OX=StructureSheaf(X);
 coherentSheaf T=Twist(OX,2);
-T=Twist(OX,-2); 
+Twist(OX,-2); 
 coherentSheaf F=CotangentSheaf(X);
-F=wedge(F,2);
-F=TensorProduct(F,T);
+wedge(F,2);
+TensorProduct(F,T);
 
 
 ring S=0,(a,b),dp;

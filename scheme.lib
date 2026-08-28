@@ -1941,6 +1941,154 @@ proc makeGradedModule(module M, intvec grad)
 }
 
 
+proc Deg(Vector V, Module M, list #)
+{
+	if(!isAttribute(M,"isgraded")){ERROR("Module must be graded!");}
+	else{
+		if(Attribute(M,"isgraded"))
+		{
+			if(RingOf(V)!=RingOf(M)){ERROR("Both inputs must be in the same ring!");}
+			def R=RingOf(V);
+			intvec Rgrad=1:nvars(R);
+			if(size(#)==1)
+			{
+				if(typeof(#[1])!="intvec"){ERROR("Additional input must be an intvec");}
+				Rgrad=#[1];
+				if(size(Rgrad)!=nvars(R)){ERROR("Intvec the wrong size!");}
+			}
+			setring R;
+			poly den=denominator(V);
+			if(!homog(den,Rgrad))
+			{
+				kill den,Rgrad; kill R;
+				ERROR("Denominator must be homogeneous!");
+			}
+			vector v=ValueOf(V);
+			intvec Mgrad=Attribute(M,"grading");
+			if(v!=0)
+			{
+				int d;
+				int first=1;
+				for(int i=1; i<=nrows(v); i=i+1)
+				{
+					if(v[i]!=0)
+					{
+						if(first)
+						{
+							d=deg(v[i],Rgrad)+Mgrad[i];
+							first=0;
+						}else{
+							if(d<(deg(v[i],Rgrad)+Mgrad[i])){d=deg(v[i],Rgrad)+Mgrad[i];}
+						}
+					}
+				}
+				d=d-deg(den,Rgrad);
+				kill i,v,den,Mgrad,Rgrad,first;
+				kill R;
+				return(d);
+			}else{
+				kill den,v,Mgrad,Rgrad;
+				kill R;
+				ERROR("Input Vector must be nonzero!");
+			}
+		}else{
+			ERROR("Module must be graded!");
+		}
+	}
+}
+
+
+proc Jet(Vector V, int n, Module M, list #)
+{
+	if(!isAttribute(M,"isgraded")){ERROR("Module must be graded!");}
+	else{
+		if(Attribute(M,"isgraded"))
+		{
+			if(RingOf(V)!=RingOf(M)){ERROR("Both inputs must be in the same ring!");}
+			def R=RingOf(V);
+			intvec Rgrad=1:nvars(R);
+			if(size(#)==1)
+			{
+				if(typeof(#[1])!="intvec"){ERROR("Additional input must be an intvec");}
+				Rgrad=#[1];
+				if(size(Rgrad)!=nvars(R)){ERROR("Intvec the wrong size!");}
+			}
+			setring R;
+			poly den=denominator(V);
+			if(!homog(den,Rgrad))
+			{
+				kill den,Rgrad; kill R;
+				ERROR("Denominator must be homogeneous!");
+			}
+			n=n+deg(den,Rgrad);
+			vector v=ValueOf(V);
+			intvec Mgrad=Attribute(M,"grading");
+			if(v!=0)
+			{
+				vector res;
+				for(int i=1; i<=nrows(v); i=i+1)
+				{
+					if(v[i]!=0)
+					{
+						res=res+jet(v[i],n-Mgrad[i],Rgrad)*gen(i);
+					}
+				}
+				Vector result=res,den;
+				kill i,v,den,Mgrad,Rgrad,res;
+				kill R;
+				return(result);
+			}else{
+				kill den,v,Mgrad,Rgrad;
+				kill R;
+				return(V);
+			}
+		}else{
+			ERROR("Module must be graded!");
+		}
+	}
+}
+
+
+proc HomogDec(Vector V, Module M, list #)
+{
+	if(!isAttribute(M,"isgraded")){ERROR("Module must be graded!");}
+	else{
+		if(Attribute(M,"isgraded"))
+		{
+			if(RingOf(V)!=RingOf(M)){ERROR("Both inputs must be in the same ring!");}
+			def R=RingOf(V);
+			setring R;
+			if(ValueOf(V)==0)
+			{
+				kill R;
+				return(list());
+			}else{
+				list Dec;
+				int d=Deg(V,M,#);
+				int done=0;
+				while(!done)
+				{
+					Vector B=Jet(V,d-1,M,#);
+					Vector A=Jet(V,d,M,#)-B;
+					if(ValueOf(A)!=0)
+					{
+						Dec[size(Dec)+1]=list(A,d);
+					}
+					if(ValueOf(B)==0){done=1;}
+					d=d-1;
+					kill A,B;
+				}
+
+				kill R,d,done;
+				return(Dec);
+			}
+		}else{
+			ERROR("Module must be graded!");
+		}
+	}
+}
+
+
 proc Homog(Vector V, Module M, list #)
 {
 	if(!isAttribute(M,"isgraded")){ERROR("Module must be graded!");}
@@ -2000,43 +2148,6 @@ proc Homog(Vector V, Module M, list #)
 }
 
 
-proc HomogDeg(Vector V, Module M, list #)
-{
-	if(!Homog(V,M,#)){ERROR("Input must be homogeneous!");}
-	def R=RingOf(V);
-	intvec Rgrad=1:nvars(R);
-	if(size(#)==1)
-	{
-		if(typeof(#[1])!="intvec"){ERROR("Additional input must be an intvec");}
-		Rgrad=#[1];
-		if(size(Rgrad)!=nvars(R)){ERROR("Intvec the wrong size!");}
-	}
-	setring R;
-	poly den=denominator(V);
-	int d=-deg(den,Rgrad);
-	vector v=ValueOf(V);
-	if(v==0){ERROR("Input vector must be non zero!");}
-	intvec Mgrad=Attribute(M,"grading");
-
-	int done=0;
-	int i=1;
-	while(!done && (i<=nrows(v)))
-	{
-		if(v[i]==0)
-		{
-			d=d+deg(v[i],Rgrad)+Mgrad[i];
-			done=1;
-		}else{
-			i=i+1;
-		}
-	}
-
-	kill i,v,den,Mgrad,Rgrad,done;
-	kill R;
-	return(d);
-}
-
-
 proc ZeroModule()
 {
 	matrix m[0][0];
@@ -2053,6 +2164,122 @@ proc FreeModule(int n)
 	Module result=module(m);
 	kill m;
 	return(result);
+}
+
+
+proc Syzygies(list Vec, Module M, list #)
+{
+	if(size(Vec)>0)
+	{
+		def R=RingOf(M);
+		setring R;
+		ideal I;
+		if(size(#)==1)
+		{
+			if(typeof(#[1])!="chart"){ERROR("Additional input must be chart!");}
+			if(RingOf(#[1])!=R){ERROR("Inputs must lie in the same ring!");}
+			I=ValueOf(#[1]);
+		}
+		module rel=ValueOf(M);
+		module m;
+		for(int i=1; i<=size(Vec); i=i+1)
+		{
+			m[i]=ValueOf(Vec[i]);
+		}
+		kill i;
+
+		if(I[1]==0)
+		{
+			m=m+rel;
+		}else{
+			m=m+rel+I*freemodule(nrows(M));
+		}
+		module s=syz(m);
+		matrix ma[size(Vec)][0];
+		module r=ma;
+		kill ma;
+		for(int i=1; i<=ncols(s); i=i+1)
+		{
+			r[i]=s[i][1..size(Vec)];
+		}
+		kill i;
+		Module result=r;
+		result=simplify(result,2);
+
+		kill m,rel,I,s,r;
+		kill R;
+		return(result);
+	}else{
+		def R=RingOf(M);
+		setring R;
+		Module result=ZeroModule();
+		kill R;
+		return(result);
+	}
+}
+
+
+proc GradedSubgroup(Module M, int d)
+{
+	if(!isAttribute(M,"isgraded")){ERROR("Module must be graded!");}
+	else{
+		if(Attribute(M,"isgraded"))
+		{
+			list Gen;
+			def R=RingOf(M);
+			setring R;
+			intvec Mgrad=Attribute(M,"grading");
+			for(int i=1; i<=nrows(M); i=i+1)
+			{
+				if(Mgrad[i]==d){Gen[size(Gen)+1]=makeVector(gen(i));}
+				if(Mgrad[i]<d)
+				{
+					ideal m=maxideal(d-Mgrad[i]);
+					for(int j=1; j<=ncols(m); j=j+1)
+					{
+						Gen[size(Gen)+1]=makeVector(m[j]*gen(i));
+					}
+					kill j,m;
+				}
+			}
+			kill i;
+
+			Module Rel=Syzygies(Gen,M);
+			module rel=ValueOf(Rel);
+
+			intvec deletegen=0:0;
+			for(int i=1; i<=ncols(rel); i=i+1)
+			{
+				if(deg(rel[i])==0)
+				{
+					int j=1;
+					int done=0;
+					while((j<=nrows(rel[i])) && (!done))
+					{
+						if(rel[i][j]!=0){done=1;}
+						else{j=j+1;}
+					}
+					if(done){deletegen[size(deletegen)+1]=j;}
+					
+					for(int k=i+1; k<=ncols(rel); k=k+1)
+					{
+						if(deg(rel[k])==0)
+						{
+							rel[k]=rel[k]-(rel[k][j]/rel[i][j])*rel[i];
+						}
+					}
+					kill k,j,done;
+				}
+			}
+			kill i,rel;
+			Gen=delete(Gen,deletegen);
+
+			kill Mgrad,R,Rel,deletegen;
+			return(Gen);
+		}else{
+			ERROR("Module must be graded!");
+		}
+	}
 }
 
 
@@ -2331,6 +2558,13 @@ static proc DSumModule(list #)
 proc Hom(Module M, Module N, list #)
 {
 	int savemorphisms=1;
+	int isgraded=0;
+	intvec grading=0:0;
+	if(isAttribute(M,"isgraded") && isAttribute(N,"isgraded"))
+	{
+		if(Attribute(M,"isgraded") && Attribute(N,"isgraded")){isgraded=1;}
+	}
+
 	def R=RingOf(M);
 	Module result;
 	setring R;
@@ -2341,7 +2575,7 @@ proc Hom(Module M, Module N, list #)
 		if(typeof(#[1])=="int"){savemorphisms=#[1];}
 		if(typeof(#[1])=="chart")
 		{
-			I=ValueOf(#[1]);
+			I=std(ValueOf(#[1]));
 		}
 	}
 	if(size(#)==2)
@@ -2357,6 +2591,14 @@ proc Hom(Module M, Module N, list #)
 
 		if(ncols(N)>0)
 		{
+			list L;
+			for(int i=1; i<=nrows(M); i=i+1)
+			{
+				L[i]=N;
+			}
+			module NN1=ValueOf(DSum(L));
+			kill i,L;
+
 			if(ncols(M)>0)
 			{
 				list L;
@@ -2372,6 +2614,10 @@ proc Hom(Module M, Module N, list #)
 				kill m;
 			}
 		}else{
+			matrix m[nrows(M)*nrows(N)][0];
+			module NN1=m;
+			kill m;
+
 			matrix m[ncols(M)*nrows(N)][0];
 			module NN2=m;
 			kill m;
@@ -2425,12 +2671,77 @@ proc Hom(Module M, Module N, list #)
 		kill i;
 		if(I[1]!=0)
 		{
-			linmaps=reduce(linmaps,std(I));
+			linmaps=reduce(linmaps,I);
 		}
 		linmaps=simplify(linmaps,6);
 
-		result=syz(linmaps);
+		if(isgraded)
+		{
+			matrix mat[nrows(linmaps)][0];
+			module newlinmaps=mat;
+			kill mat;
+			intvec Mgrad=Attribute(M,"grading");
+			intvec Ngrad=Attribute(N,"grading");
+			intvec Mapgrad=0:(nrows(M)*nrows(N));
+			for(int j=1; j<=nrows(M); j=j+1)
+			{
+				for(int k=1; k<=nrows(N); k=k+1)
+				{
+					Mapgrad[(j-1)*nrows(N)+k]=Ngrad[k]-Mgrad[j];
+				}
+				kill k;
+			}
+			kill j;
+			Module N1=makeGradedModule(NN1,Mapgrad);
+
+			for(int i=1; i<=ncols(linmaps); i=i+1)
+			{
+				list Dec=HomogDec(makeVector(linmaps[i]),N1);
+				for(int j=1; j<=size(Dec); j=j+1)
+				{
+					newlinmaps[ncols(newlinmaps)+1]=ValueOf(Dec[j][1]);
+					grading[size(grading)+1]=Dec[j][2];
+				}
+				kill j;
+
+				kill Dec;
+			}
+			kill i;
+
+			linmaps=newlinmaps;
+			kill newlinmaps,Mapgrad,Mgrad,Ngrad;
+		}
+
+		int nf=ncols(linmaps);
+		for(int i=1; i<=ncols(NN1); i=i+1)
+		{
+			linmaps[nf+i]=NN1[i];
+		}
+		kill i;
+		kill NN1;
+
+		module relations=syz(linmaps);
+		if(nf>0)
+		{
+			matrix mr[nf][0];
+			module r=mr;
+			kill mr;
+			for(int i=1; i<=ncols(relations); i=i+1)
+			{
+				r[i]=relations[i][1..nf];
+			}
+			kill i;
+			if(I[1]!=0)
+			{
+				r=reduce(r,I);
+			}
+			result=r;
+			kill r;
+		}else{
+			result=ZeroModule();
+		}
 		result=simplify(result,2);
+		kill relations;
 
 		if(savemorphisms)
 		{
@@ -2438,7 +2749,7 @@ proc Hom(Module M, Module N, list #)
 			result=SetAttribute(result,"Preim",M);
 			result=SetAttribute(result,"Im",N);
 			list Maps;
-			for(int i=1; i<=ncols(linmaps); i=i+1)
+			for(int i=1; i<=nf; i=i+1)
 			{
 				Maps[i]=list();
 				for(int j=1; j<=nrows(M); j=j+1)
@@ -2454,7 +2765,7 @@ proc Hom(Module M, Module N, list #)
 				}
 				kill j;
 			}
-			kill i;
+			kill i,nf;
 			result=SetAttribute(result,"Maps",Maps);
 			kill Maps;
 		}
@@ -2463,8 +2774,13 @@ proc Hom(Module M, Module N, list #)
 		result=ZeroModule();
 	}
 
+	if(isgraded)
+	{
+		result=SetAttribute(result,"isgraded",isgraded);
+		result=SetAttribute(result,"grading",grading);
+	}
 	kill I;
-	kill R,savemorphisms;
+	kill R,savemorphisms,isgraded,grading;
 	return(result);
 }
 
@@ -2502,21 +2818,25 @@ static proc GlobalSectionsModule(Module M, chart X)
 	}
 	kill i;
 	m=m+I;
-	module mm=syz(m);
-	kill m;
-	for(int i=1; i<=ncols(mm); i=i+1)
+	module ms=syz(m);
+	matrix mat[nvars(R)][0];
+	module mm=mat;
+	kill m,mat;
+	for(int i=1; i<=ncols(ms); i=i+1)
 	{
-		mm[i]=mm[i][1..nvars(R)];
+		mm[i]=ms[i][1..nvars(R)];
 	}
 	kill i;
-	Module Max=mm;
-	kill mm;
+	intvec grad=reg:nvars(R);
+	Module Max=makeGradedModule(mm,grad);
+	kill mm,ms,grad;
 
 	Module H=Hom(Max,M,1);
+	list H0=GradedSubgroup(H,0);
 
 	kill I;
 	kill Mgradings,R,Max;
-	return(list(H,reg));
+	return(list(H,H0,reg));
 }
 
 
@@ -3048,17 +3368,27 @@ proc GlobalSections(coherentSheaf F)
 
 	list L=GlobalSectionsModule(M,U);
 	Module H=L[1];
-	~;
 	list HMaps=Attribute(H,"Maps");
+	list HGen=L[2];
 	list Sections;
 
-	for(int i=1; i<=size(HMaps); i=i+1)
+	for(int i=1; i<=size(HGen); i=i+1)
 	{
 		def R=RingOf(M);
 		Sections[i]=list();
+		vector h=ValueOf(HGen[i]);
 		for(int j=1; j<=nvars(R); j=j+1)
 		{
-			vector v=ValueOf(HMaps[i][j]);
+			vector v=0;
+			for(int k=1; k<=nrows(h); k=k+1)
+			{
+				if(h[k]!=0)
+				{
+					v=v+h[k]*ValueOf(HMaps[k][j]);
+				}
+			}
+			kill k;
+
 			def S=RingOf(CoverOf(F)[j]);
 			setring S;
 			ideal I;
@@ -3087,6 +3417,7 @@ proc GlobalSections(coherentSheaf F)
 			setring R;
 			kill v;
 		}
+		kill h;
 		kill j,R;
 	}
 	kill i;

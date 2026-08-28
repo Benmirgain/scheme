@@ -15,6 +15,13 @@ RingOf(M);
 ncols(M);
 nrows(M);
 M;
+chart U=ideal(x-y,x-z);
+list L;
+Syzygies(L,M);
+L=list(makeVector([1,1,1]));
+Syzygies(L,M);
+Syzygies(L,M,U);
+kill U,L;
 
 
 ring S=0,(a,b),dp;
@@ -55,8 +62,8 @@ Homog(V,NG);
 Homog(W,NG);
 Homog(U,NG);
 Homog(U,NG,grad);
-HomogDeg(U,NG);
-HomogDeg(U,NG,grad);
+Deg(U,NG);
+Deg(U,NG,grad);
 denominator(V);
 denominator(W);
 denominator(U);
