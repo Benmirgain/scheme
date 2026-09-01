@@ -25,6 +25,16 @@ system("--no-out",1);
 <"ModuleTest.sing";
 
 system("--no-out",0);
+"starting FracIdealTest.sing";
+system("--no-out",1);
+<"FracIdealTest.sing";
+
+system("--no-out",0);
+"starting SheafTest.sing";
+system("--no-out",1);
+<"SheafTest.sing";
+
+system("--no-out",0);
 "starting ChartmapTest.sing";
 system("--no-out",1);
 <"ChartmapTest.sing";

@@ -105,7 +105,10 @@ LIB "multigrading.lib";
 
 static proc mod_init()
 {
+	system("reference");
+
   newstruct("AttribTable","list keys, list values");
+  newstruct("FracIdeal","ideal value, poly den, AttribTable attrubutes");
   newstruct("chart","ring in, ideal value, AttribTable attributes");
   newstruct("chartmap","chart preim, chart im, ideal dom, list ratFuncs, AttribTable attributes");
   newstruct("scheme","list cover, list maps, AttribTable attributes");
@@ -157,6 +160,14 @@ static proc mod_init()
   system("install","scheme","!=",notequalScheme,2);
   system("install","scheme","print",printScheme,1);
   system("install","scheme","dim",SchemeDimension,1);
+  system("install","FracIdeal","print",printFracIdeal,1);
+  system("install","FracIdeal","string",stringFracIdeal,4);
+  system("install","FracIdeal","+",addFracIdeal,2);
+  system("install","FracIdeal","*",multFracIdeal,2);
+  system("install","FracIdeal","^",expFracIdeal,2);
+  system("install","FracIdeal","=",makeFracIdeal,1);
+  system("install","FracIdeal","intersect",IntersectFracIdeal,4);
+  system("install","FracIdeal","denominator",DenFI,1);
   system("install","ratFunc","=",makeratFunc,1);
   system("install","ratFunc","print",printratFunc,1);
   system("install","ratFunc","string",stringratFunc,1);
@@ -223,6 +234,7 @@ EXAMPLE: example RingOf; shows an example"
 	branchTo("Vector",RingOfTemplate);
 	branchTo("Poly",RingOfTemplate);
 	branchTo("Ideal",RingOfTemplate);
+	branchTo("FracIdeal",RingOfTemplate);
 	ERROR("Wrong input!");
 }
 example
@@ -251,6 +263,7 @@ EXAMPLE: example ValueOf; shows an example"
 	branchTo("Vector",ValueOfTemplate);
 	branchTo("Poly",ValueOfTemplate);
 	branchTo("Ideal",ValueOfTemplate);
+	branchTo("FracIdeal",ValueOfTemplate);
 	ERROR("Wrong input!");
 }
 example
@@ -2188,13 +2201,23 @@ proc Syzygies(list Vec, Module M, list #)
 		}
 		kill i;
 
-		if(I[1]==0)
+		for(int i=1; i<=ncols(rel); i=i+1)
 		{
-			m=m+rel;
-		}else{
-			m=m+rel+I*freemodule(nrows(M));
+			m[ncols(m)+1]=rel[i];
+		}
+		kill i;
+
+		if(I[1]!=0)
+		{
+			module n=I*freemodule(nrows(M));
+			for(int i=1; i<=ncols(n); i=i+1)
+			{
+				m[ncols(m)+1]=n[i];
+			}
+			kill i;
 		}
 		module s=syz(m);
+
 		matrix ma[size(Vec)][0];
 		module r=ma;
 		kill ma;
@@ -2247,6 +2270,8 @@ proc GradedSubgroup(Module M, int d)
 			Module Rel=Syzygies(Gen,M);
 			module rel=ValueOf(Rel);
 
+			if(size(Gen)>0)
+			{
 			intvec deletegen=0:0;
 			for(int i=1; i<=ncols(rel); i=i+1)
 			{
@@ -2273,8 +2298,10 @@ proc GradedSubgroup(Module M, int d)
 			}
 			kill i,rel;
 			Gen=delete(Gen,deletegen);
+			kill deletegen;
+			}
 
-			kill Mgrad,R,Rel,deletegen;
+			kill Mgrad,R,Rel;
 			return(Gen);
 		}else{
 			ERROR("Module must be graded!");
@@ -2741,7 +2768,36 @@ proc Hom(Module M, Module N, list #)
 			result=ZeroModule();
 		}
 		result=simplify(result,2);
-		kill relations;
+		list L=PruneModuleWithTransformation(result);
+		if(L[1])
+		{
+			result=L[2];
+			nf=nrows(result);
+			intvec newgrading=0:nf;
+			matrix mat[nf][0];
+			module newlinmaps=mat;
+			kill mat;
+			list ToOld=L[4];
+			for(int i=1; i<=nf; i=i+1)
+			{
+				vector v=ValueOf(ToOld[i]);
+				newlinmaps[i]=0;
+				for(int j=1; j<=nrows(v); j=j+1)
+				{
+					if(v[j]!=0)
+					{
+						newlinmaps[i]=newlinmaps[i]+v[j]*linmaps[j];
+						newgrading[i]=deg(v[j])+grading[j];
+					}
+				}
+				kill j,v;
+			}
+			kill i;
+			linmaps=newlinmaps;
+			grading=newgrading;
+			kill ToOld,newlinmaps,newgrading;
+		}
+		kill relations,L;
 
 		if(savemorphisms)
 		{
@@ -2817,7 +2873,7 @@ static proc GlobalSectionsModule(Module M, chart X)
 		m[i]=var(i)^reg;
 	}
 	kill i;
-	m=m+I;
+	m=m,I;
 	module ms=syz(m);
 	matrix mat[nvars(R)][0];
 	module mm=mat;
@@ -3239,6 +3295,12 @@ proc CotangentSheaf(scheme X)
 }
 
 
+proc CanonicalBundle(scheme X)
+{
+	return(wedge(CotangentSheaf(X),dim(X)));
+}
+
+
 proc AssociatedSheaf(Module M, scheme X)
 {
 	if(!isAttribute(X,"isprojective"))
@@ -3363,7 +3425,98 @@ proc GlobalSections(coherentSheaf F)
 		M=Attribute(F,"AssociatedModule");
 		MapsToCover=Attribute(F,"MapsToCover");
 	}else{
-		//To be done
+		intvec grad=0:0;
+		int maxgrad;
+		for(int i=1; i<=size(CoverOf(F)); i=i+1)
+		{
+			MapsToCover[i]=list();
+		}
+		kill i;
+		def S=RingOf(U);
+
+		int ng=0;
+		for(int i=1; i<=size(CoverOf(F)); i=i+1)
+		{
+			for(int j=1; j<=nrows(CoverOf(F)[i]); j=j+1)
+			{
+				ng=ng+1;
+				int d;
+				for(int k=1; k<=size(CoverOf(F)); k=k+1)
+				{
+					def R=RingOf(CoverOf(F)[k]);
+					setring R;
+					poly den=denominator(SimplifyVector(RulesOf(MapsOf(F)[i][k])[1][j]));
+					if(d<deg(den)){d=deg(den);}
+					kill den;
+					kill R;
+				}
+				kill k;
+				grad[ng]=d;
+				if(maxgrad<d){maxgrad=d;}
+				for(int k=1; k<=size(CoverOf(F)); k=k+1)
+				{
+					def R=RingOf(CoverOf(F)[k]);
+					setring R;
+					Vector V=SimplifyVector(RulesOf(MapsOf(F)[i][k])[1][j]);
+					vector v=ValueOf(V);
+					poly den=denominator(V);
+					poly p=1;
+					if(i<k){p=var(i);}
+					if(i>k){p=var(i-1);}
+					MapsToCover[k][ng]=makeVector(p^(d-deg(den))*v);
+					kill den,v,p,V;
+					kill R;
+				}
+				kill k,d;
+			}
+			kill j;
+		}
+		kill i;
+
+		setring S;
+		module Rel=freemodule(ng);
+		for(int i=1; i<=size(CoverOf(F)); i=i+1)
+		{
+			def R=RingOf(CoverOf(F)[i]);
+			setring R;
+			module rel=ValueOf(Syzygies(MapsToCover[i],CoverOf(F)[i],CoverOf(X)[i]));
+
+			setring S;
+			ideal I;
+			for(int j=1; j<=nvars(R); j=j+1)
+			{
+				if(j<i){I[j]=var(j);}
+				else{I[j]=var(j+1);}
+			}
+			kill j;
+			map f=R,I;
+			module rel=f(rel);
+			rel=homog(rel,var(i));
+			for(int j=1; j<=ncols(rel); j=j+1)
+			{
+				vector v=0;
+				for(int k=1; k<=nrows(rel); k=k+1)
+				{
+					v=v+var(i)^(maxgrad-grad[k])*rel[k,j]*gen(k);
+				}
+				kill k;
+				rel[j]=v;
+				kill v;
+			}
+			kill j;
+			Rel=intersect(Rel,rel);
+			kill f,I,rel;
+
+			setring R;
+			kill rel;
+			kill R;
+		}
+		kill i;
+
+		setring S;
+		M=makeGradedModule(Rel,grad);
+		kill Rel;
+		kill ng,S,grad,maxgrad;
 	}
 
 	list L=GlobalSectionsModule(M,U);
@@ -5815,6 +5968,55 @@ static proc intTimesDivisor(int n, WeilDivisor D)
 }
 
 
+proc ComponentList(WeilDivisor D)
+{
+	list L;
+	for(int i=1; i<=size(D.schemes); i=i+1)
+	{
+		L[i]=list(D.schemes[i],D.mults[i]);
+	}
+	kill i;
+	return(L);
+}
+
+
+static proc FracIdealWDivLocal(list D, chart X)
+{
+	def R=RingOf(X);
+	setring R;
+	FracIdeal I=ideal(1);
+
+	for(int i=1; i<=size(D); i=i+1)
+	{
+		I=intersect(I,FracIdealPrimeDiv(D[i][1],D[i][2],X));
+	}
+	kill i;
+
+	kill R;
+	return(I);
+}
+
+
+static proc FracIdealPrimeDiv(chart P, int n, chart X)
+{
+	if(n>=0)
+	{
+		def R=RingOf(P);
+		setring R;
+		if(n==0){return(makeFracIdeal(ideal(1)));}
+		ideal Q=ValueOf(P);
+		ideal I=Q^n;
+		I=I+ValueOf(X);
+		FracIdeal result=equidimMax(I);
+		kill I,Q;
+		kill R;
+		return(result);
+	}else{
+
+	}
+}
+
+
 
 
 
@@ -6039,6 +6241,153 @@ static proc diffRatFunc(ratFunc f, int k)
 		kill df;
 		kill R;
 		return(result);
+	}
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+//  Fractional Ideals
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+proc makeFracIdeal(ideal i, list #)
+"USAGE: makeFracIdeal(I); I ideal[, poly f]
+RETURN: make a fractinal ideal f^(-1)*I
+EXAMPLE: example makeFracIdeal, shows an example"
+{
+FracIdeal I;
+I.value=i;
+if(size(#)>0)
+{
+	if(size(#)==1)
+	{
+		if(typeof(#[1])=="poly"){I.den=#[1];}
+		if(typeof(#[1])=="AttribTable")
+		{
+			I.attributes=#[1];
+			I.den=1;
+		}
+		if(typeof(#[1])!="poly" && typeof(#[1])!="AttribTable"){ERROR("Wrong additional inputs!");}
+	}
+	if(size(#)==2)
+	{
+		if(typeof(#[1])!="poly" || typeof(#[2])!="AttribTable"){ERROR("Wrong additional inputs!");}
+		else{
+			I.attributes=#[2];
+			I.den=#[1];
+		}
+	}
+}else{
+	I.den=1;
+}
+return(I);
+}
+example
+{"EXAMPLE:";
+ring R=0,(x,y),dp;
+FracIdeal I=ideal(2x3+x2y-1,y2+3);
+FracIdeal J=ideal(x+y,y2+1),x-y;
+I+J;
+I*J;
+J^2;
+string(I);
+}
+
+
+static proc DenFI(FracIdeal I)
+{
+	return(I.den);
+}
+
+
+static proc printFracIdeal(FracIdeal I)
+{
+string(I);
+}
+
+
+
+static proc stringFracIdeal(FracIdeal I)
+{
+def S=I.r_value;
+setring S;
+string st;
+ideal A=I.value;
+poly den=I.den;
+if(size(I.value)>0)
+{
+	for(int i=1; i<=ncols(A); i=i+1)
+	{
+		if(A[i]!=0)
+		{
+			poly g=leadcoef(den)*gcd(A[i],den);
+			st=st+string(A[i]/g);
+			if((den/g)!=1)
+			{
+				st=st+"/"+string(den/g);
+			}
+			st=st+",";
+			kill g;
+		}
+	}
+	kill i;
+	st=st[1..(size(st)-1)];
+}else{
+	st="0";
+}
+kill A,den;
+kill S;
+return(st);
+}
+
+
+static proc IntersectFracIdeal(FracIdeal I, FracIdeal J)
+{
+	def S=I.r_value;
+	setring S;
+	FracIdeal IcapJ=intersect(denominator(J)*ValueOf(I),denominator(I)*ValueOf(J)),denominator(I)*denominator(J);
+	kill S;
+	return(IcapJ);
+}
+
+
+static proc addFracIdeal(FracIdeal I, FracIdeal J)
+{
+def S=I.r_value;
+setring S;
+FracIdeal IplusJ=J.den*I.value+I.den*J.value,I.den*J.den;
+kill S;
+return(IplusJ);
+}
+
+
+
+static proc multFracIdeal(FracIdeal I, FracIdeal J)
+{
+def S=I.r_value;
+setring S;
+FracIdeal ItimesJ=(I.value)*(J.value),I.den*J.den;
+kill S;
+return(ItimesJ);
+}
+
+
+
+
+static proc expFracIdeal(FracIdeal I,int n)
+{
+	if(n>=0)
+	{
+		def S=I.r_value;
+		setring S;
+		FracIdeal Iexpn=ideal((I.value)^n),poly(I.den^n);
+		kill S;
+		return(Iexpn);
+	}else{
+		ERROR("Negative exponent not supported!");
 	}
 }
 

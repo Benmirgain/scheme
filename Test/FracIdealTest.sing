@@ -1,0 +1,34 @@
+if(!defined(Scheme))
+{
+    LIB "scheme.lib";
+}
+killall();
+
+
+ring R=0,(x,y,z),dp;
+
+FracIdeal I=ideal(x,y,z),y;
+FracIdeal J=ideal(x2-yz,x+y);
+FracIdeal K=ideal(0),x;
+FracIdeal L=ideal(x+y,0,-z),y;
+
+RingOf(I);
+ValueOf(L);
+denominator(J);
+
+I*J;
+I*K;
+I*L;
+I+L;
+I+K;
+I+J;
+I^3;
+K^4;
+J^5;
+L^6;
+intersect(I,J);
+intersect(K,L);
+string(I);
+string(K);
+string(J);
+string(L);
