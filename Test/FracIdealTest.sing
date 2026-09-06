@@ -8,13 +8,22 @@ killall();
 ring R=0,(x,y,z),dp;
 
 FracIdeal I=ideal(x,y,z),y;
-FracIdeal J=ideal(x2-yz,x+y);
+FracIdeal J=std(ideal(x2-yz,x+y));
 FracIdeal K=ideal(0),x;
 FracIdeal L=ideal(x+y,0,-z),y;
+chart U=ideal(x-y);
 
 RingOf(I);
 ValueOf(L);
 denominator(J);
+denominator(I);
+ncols(L);
+size(L);
+syz(I);
+FracIdealToModule(I,U);
+Attribute(FracIdealToModule(I,U),"GenContext");
+Attribute(J,"isSB");
+StdOf(L);
 
 I*J;
 I*K;

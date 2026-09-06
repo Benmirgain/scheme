@@ -14,6 +14,8 @@ WeilDivisor B=list(Y,1),list(Z,1),X;
 Y=makeProjScheme(ideal(y),X);
 WeilDivisor C=list(Y,1),X;
 IntersectionNumber(3*C-A,B);
+coherentSheaf OD=WeilDivisorToLineBundle(3*C-B+A);
+GlobalSections(OD);
 
 Y=makeProjScheme(ideal(x2z-zy2-y3),X);
 WeilDivisor D=list(Y,1),X;

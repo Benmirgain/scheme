@@ -90,6 +90,7 @@ union(X,Y); computes the scheme theoretic union of the schemes X and Y
 
 LIB "idealclass.lib";
 LIB "sing.lib";
+LIB "linalg.lib";
 LIB "elim.lib";
 LIB "polyclass.lib";
 LIB "primdec.lib";
@@ -108,7 +109,7 @@ static proc mod_init()
 	system("reference");
 
   newstruct("AttribTable","list keys, list values");
-  newstruct("FracIdeal","ideal value, poly den, AttribTable attrubutes");
+  newstruct("FracIdeal","ideal value, poly den, AttribTable attributes");
   newstruct("chart","ring in, ideal value, AttribTable attributes");
   newstruct("chartmap","chart preim, chart im, ideal dom, list ratFuncs, AttribTable attributes");
   newstruct("scheme","list cover, list maps, AttribTable attributes");
@@ -133,7 +134,7 @@ static proc mod_init()
   system("install","AttribTable","print",PrintAttributes,1);
   system("install","chart","=",makeChart,1);
   system("install","chartmap","=",makeChartmap,1);
-  system("install","chart","print",printChart,1);
+  system("install","chart","print",printChart,2);
   system("install","chartmap","print",printChartmap,1);
   system("install","chart","==",equalChart,2);
   system("install","chart","!=",notequalChart,2);
@@ -168,6 +169,9 @@ static proc mod_init()
   system("install","FracIdeal","=",makeFracIdeal,1);
   system("install","FracIdeal","intersect",IntersectFracIdeal,4);
   system("install","FracIdeal","denominator",DenFI,1);
+  system("install","FracIdeal","ncols",NcolsFI,1);
+  system("install","FracIdeal","size",SizeFI,1);
+  system("install","FracIdeal","syz",SyzFI,1);
   system("install","ratFunc","=",makeratFunc,1);
   system("install","ratFunc","print",printratFunc,1);
   system("install","ratFunc","string",stringratFunc,1);
@@ -198,11 +202,14 @@ static proc mod_init()
   system("install","Vector","string",stringVector,1);
   system("install","Vector","denominator",DenV,1);
   system("install","Vector","nrows",NrowsV,1);
+  system("install","Vector","[",accessV,2);
   system("install","Module","print",printModule,1);
   system("install","Module","nrows",NrowsM,1);
   system("install","Module","ncols",NcolsM,1);
   system("install","Module","=",makeModule,1);
   system("install","Module","simplify",SimplifyModule,2);
+  system("install","Module","syz",SyzM,1);
+  system("install","Module","syz",SyzM,2);
   system("install","Module","prune",PruneModule,1);
   system("install","ModuleMap","print",printModuleMap,1);
   system("install","coherentSheaf","wedge",WedgeProdSheaf,2);
@@ -274,6 +281,13 @@ example
 }
 
 
+proc Domain()
+{
+	branchTo("chartmap",DomainCM);
+	ERROR("Wrong input!");
+}
+
+
 proc isEmpty()
 "USAGE: isEmpty(C); chart C
 RETURN: 1 if chart is the empty set, otherwise 0
@@ -297,6 +311,7 @@ RETURN: chart C with standard basis for the ideal defining it
 EXAMPLE: example StdOf; shows an example"
 {
 	branchTo("chart",StdOfC);
+	branchTo("FracIdeal",StdOfFI);
 	ERROR("Wrong input!");
 }
 example
@@ -484,7 +499,7 @@ proc SetAttribute(def X, string key, def value)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector","FracIdeal");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -506,7 +521,7 @@ proc AttributeTable(def X)
 	int correctinput=0;
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector","FracIdeal");
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
 		if(typeof(X)==Typelist[i]){correctinput=1;}
@@ -546,7 +561,7 @@ proc Attribute(def X, string key)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector","FracIdeal");
 	
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -577,7 +592,7 @@ proc RemoveAttribute(def X, string key)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector","FracIdeal");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -612,7 +627,7 @@ proc isAttribute(def X, string key)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector","FracIdeal");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -635,7 +650,7 @@ proc AttributeList(def X)
 
 	list Typelist=list("chart","chartmap","scheme","affVariety","projVariety","product",
 		"morphism","affRatMap","projRatMap","WeilDivisor","CartierDivisor","RatSection",
-		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector");
+		"ratFunc","blowUpMap","iterativeScheme","iterativeChart","coherentSheaf","Module","Vector","FracIdeal");
 
 	for(int i=1; i<=size(Typelist); i=i+1)
 	{
@@ -859,15 +874,20 @@ static proc IC(chart C)
 }
 
 // Print routine for chart
-static proc printChart(chart C)
+static proc printChart(chart C, list #)
 {
    	def S=RingOf(C);
    	setring S;
+	int printAtt=0;
+	if(size(#)==1)
+	{
+		printAtt=#[1];
+	}
 	if(!isEmpty(C))
    	{
    		"ring = "+string(S);
    		"quotient = "+string(ValueOf(C));
-		if(voice<=2)
+		if(printAtt)
 		{
 			"Attributes:";
 			PrintAttributes(C);
@@ -1117,6 +1137,13 @@ psi==phi;
 psi=U,V,F,G;
 psi==phi;
 }
+
+
+static proc DomainCM(chartmap f)
+{
+	return(f.dom);
+}
+
 
 static proc IdentityMapC(chart C)
 {
@@ -1703,7 +1730,7 @@ proc printAffRatMap(affRatMap phi)
 
     setring R;
     "Preimage ring: ("+string(R)+")/("+string(ValueOf(PreimageSpace(phi)))+")"; 
-    "Domain: D("+string(Domain(phi))+")";   
+    "Domain: D("+string(MaxDomain(phi))+")";   
     setring S;
     "Image ring: ("+string(S)+")/("+string(ValueOf(ImageSpace(phi)))+")";
     string st;
@@ -1736,7 +1763,7 @@ proc printProjRatMap(projRatMap phi)
 
     setring R;
     "Preimage ring: ("+string(R)+")/("+string(ValueOf(PreimageSpace(phi)))+")"; 
-    "Domain: D("+string(Domain(phi))+")";   
+    "Domain: D("+string(MaxDomain(phi))+")";   
     setring S;
     "Image ring: ("+string(S)+")/("+string(ValueOf(ImageSpace(phi)))+")";
     string st;
@@ -1763,11 +1790,11 @@ proc printProjRatMap(projRatMap phi)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-// Vector Stuff
+//  Vector Stuff
 ////////////////////////////////////////////////////////////////////////////////////////
 
- proc makeVector(vector V, list #)
- {
+proc makeVector(vector V, list #)
+{
 	Vector result;
 	result.in=basering;
 	result.value=V;
@@ -1785,7 +1812,20 @@ proc printProjRatMap(projRatMap phi)
 		}
 	}
 	return(result);
- }
+}
+
+
+static proc accessV(Vector V, int n)
+{
+	def R=RingOf(V);
+	setring R;
+	poly num=V.value[n];
+	poly den=V.den;
+	ratFunc res=num,den;
+	kill num,den;
+	kill R;
+	return(res);
+}
 
 
 proc SimplifyVector(Vector V)
@@ -1951,6 +1991,326 @@ proc makeGradedModule(module M, intvec grad)
 	result=M,A;
 	kill A;
 	return(result);
+}
+
+
+proc isLocallyFree()
+{
+	branchTo("Module","chart",isLocallyFreeMNH);
+	branchTo("Module","chart","int",isLocallyFreeMH);
+	branchTo("coherentSheaf","int",isLocallyFreeSH);
+	ERROR("Wrong input!");
+}
+
+
+static proc isLocallyFreeMNH(Module M, chart X)
+{
+	def R=RingOf(M);
+	setring R;
+	ideal I=StdOf(X);
+	matrix m=ValueOf(M);
+	int isLF=1;
+
+	int r=nrows(M);
+	int done=0;
+	
+	if(r>0 && !done)
+	{
+		ideal J=minor(m,r);
+		if(size(reduce(J,I))==0)
+		{
+			r=r-1;
+		}else{
+			J=std(I,J);
+			if(J[1]==1){done=1;}
+			else{isLF=0;}
+		}
+		kill J;
+	}
+
+	kill I,m;
+	kill R,r;
+	return(isLF);
+}
+
+
+static proc isLocallyFreeMH(Module M, chart X, int hint)
+{
+	def R=RingOf(M);
+	setring R;
+	ideal I=StdOf(X);
+	matrix m=ValueOf(M);
+	int isLF=1;
+
+	if((hint<0) || (hint>nrows(M)) || ((hint+ncols(M))<nrows(M))){isLF=0;}
+	int r=nrows(M)-hint;
+
+	if(isLF){if(size(reduce(minor(m,r+1),I))!=0){isLF=0;}}	
+
+	if(isLF)
+	{
+		I=std(I,minor(m,r));
+		if(I[1]!=1){isLF=0;}
+	}
+
+	kill I,m;
+	kill R,r;
+	return(isLF);
+}
+
+
+proc LocallyFreeCover()
+{
+	branchTo("Module","chart",LocallyFreeCoverMNH);
+	branchTo("Module","chart","int",LocallyFreeCoverMH);
+	branchTo("coherentSheaf","int",LocallyFreeCoverSH);
+	ERROR("Wrong input!");
+}
+
+
+static proc LocallyFreeCoverMNH(Module M, chart X)
+{
+	def R=RingOf(M);
+	setring R;
+	ideal I=StdOf(X);
+	matrix m=ValueOf(M);
+	list CoverMaps;
+
+	int r=nrows(M);
+	int done=0;
+	while(r>0 && !done)
+	{
+		ideal J=minor(m,r);
+		if(size(reduce(J,I))==0)
+		{
+			r=r-1;
+		}else{
+			J=std(I,J);
+			if(J[1]==1){done=1;}
+			else{ERROR("Module is not locally free!");}
+		}
+		kill J;
+	}
+	kill done;
+	list RowIndices=orderedSubsequence(nrows(M),r);
+	list ColIndices=orderedSubsequence(ncols(M),r);
+
+	int done=0;
+	int i=1;
+	list C;
+	while((i<=size(RowIndices)) && !done)
+	{
+		int j=1;
+		while((j<=size(ColIndices)) && !done)
+		{
+			matrix A=submat(m,intvec(RowIndices[i]),intvec(ColIndices[j]));
+			poly p=det(A);
+			intvec freegen=1:nrows(m);
+			for(int k=1; k<=size(RowIndices[i]); k=k+1)
+			{
+				freegen[RowIndices[i][k]]=0;
+			}
+			kill k;
+			intvec freeind=0:0;
+			for(int k=1; k<=size(freegen); k=k+1)
+			{
+				if(freegen[k])
+				{
+					freeind[size(freeind)+1]=k;
+				}
+			}
+			kill k;
+			if(reduce(p,I)!=0)
+			{
+				CoverMaps[size(CoverMaps)+1]=list();
+				C[size(CoverMaps)]=simplify(sqrfree(p,3),1);
+				matrix B=adjoint(A);
+				matrix SM=submat(m,1..nrows(m),intvec(ColIndices[j]));
+				SM=SM*B;
+				int fc=1;
+				int nfc=1;
+				for(int k=1; k<=size(freegen); k=k+1)
+				{
+					if(freegen[k])
+					{
+						CoverMaps[size(CoverMaps)][k]=makeVector(gen(fc));
+						fc=fc+1;
+					}else{
+						vector v=0;
+						for(int l=1; l<=size(freeind); l=l+1)
+						{
+							v=v-SM[freeind[l],nfc]*gen(l);
+						}
+						CoverMaps[size(CoverMaps)][k]=makeVector(v,p);
+						kill l,v;
+						nfc=nfc+1;
+					}
+				}
+				kill k,fc,nfc;
+				I=std(I,p);
+				if(I[1]==1){done=1;}
+				kill B,SM;
+			}
+			kill p,A,freeind,freegen;
+			j=j+1;
+		}
+		kill j;
+		i=i+1;
+	}
+	kill i;
+
+	if(!done){ERROR("Module is not locally free!");}
+
+	for(int i=size(C); i>=1; i=i-1)
+	{
+		int found=0;
+		int j=1;
+		while(j<=size(C) && !found)
+		{
+			if(reduce(C[i],C[j])==0 && i!=j)
+			{
+				found=1;
+				C=delete(C,i);
+				CoverMaps=delete(CoverMaps,i);
+			}else{
+				j=j+1;
+			}
+		}
+		kill j,found;
+	}
+	kill i;
+
+	ideal IC;
+	for(int i=1; i<=size(C); i=i+1)
+	{
+		IC[i]=C[i];
+	}
+	kill i;
+	M=SetAttribute(M,"islocallyfree",1);
+	M=SetAttribute(M,"localrank",nrows(M)-r);
+	M=SetAttribute(M,"FreeCoverMaps",CoverMaps);
+	M=SetAttribute(M,"FreeCover",makeFracIdeal(IC));
+
+	kill I,m,C,IC;	
+	kill R,r,RowIndices,ColIndices,done,CoverMaps;
+	return(M);
+}
+
+
+static proc LocallyFreeCoverMH(Module M, chart X, int hint)
+{
+	def R=RingOf(M);
+	setring R;
+	ideal I=StdOf(X);
+	matrix m=ValueOf(M);
+	list CoverMaps;
+
+	if((hint<0) || (hint>nrows(M)) || ((hint+ncols(M))<nrows(M))){ERROR("Integer out of range!");}
+	int r=nrows(M)-hint;
+	list RowIndices=orderedSubsequence(nrows(M),r);
+	list ColIndices=orderedSubsequence(ncols(M),r);
+
+	if(size(reduce(minor(m,r+1),I))!=0){ERROR("Module is not locally free of rank "+string(hint)+"!");}
+
+	int done=0;
+	int i=1;
+	list C;
+	while((i<=size(RowIndices)) && !done)
+	{
+		int j=1;
+		while((j<=size(ColIndices)) && !done)
+		{
+			matrix A=submat(m,intvec(RowIndices[i]),intvec(ColIndices[j]));
+			poly p=det(A);
+			intvec freegen=1:nrows(m);
+			for(int k=1; k<=size(RowIndices[i]); k=k+1)
+			{
+				freegen[RowIndices[i][k]]=0;
+			}
+			kill k;
+			intvec freeind=0:0;
+			for(int k=1; k<=size(freegen); k=k+1)
+			{
+				if(freegen[k])
+				{
+					freeind[size(freeind)+1]=k;
+				}
+			}
+			kill k;
+			if(reduce(p,I)!=0)
+			{
+				CoverMaps[size(CoverMaps)+1]=list();
+				C[size(CoverMaps)]=simplify(sqrfree(p,3),1);
+				matrix B=adjoint(A);
+				matrix SM=submat(m,1..nrows(m),intvec(ColIndices[j]));
+				SM=SM*B;
+				int fc=1;
+				int nfc=1;
+				for(int k=1; k<=size(freegen); k=k+1)
+				{
+					if(freegen[k])
+					{
+						CoverMaps[size(CoverMaps)][k]=makeVector(gen(fc));
+						fc=fc+1;
+					}else{
+						vector v=0;
+						for(int l=1; l<=size(freeind); l=l+1)
+						{
+							v=v-SM[freeind[l],nfc]*gen(l);
+						}
+						CoverMaps[size(CoverMaps)][k]=makeVector(v,p);
+						kill l,v;
+						nfc=nfc+1;
+					}
+				}
+				kill k,fc,nfc;
+				I=std(I,p);
+				if(I[1]==1){done=1;}
+				kill B,SM;
+			}
+			kill p,A,freeind,freegen;
+			j=j+1;
+		}
+		kill j;
+		i=i+1;
+	}
+	kill i;
+
+	if(!done){ERROR("Module is not locally free of rank "+string(hint)+"!");}
+
+	for(int i=size(C); i>=1; i=i-1)
+	{
+		int found=0;
+		int j=1;
+		while(j<=size(C) && !found)
+		{
+			if(reduce(C[i],C[j])==0 && i!=j)
+			{
+				found=1;
+				C=delete(C,i);
+				CoverMaps=delete(CoverMaps,i);
+			}else{
+				j=j+1;
+			}
+		}
+		kill j,found;
+	}
+	kill i;
+
+	ideal IC;
+	for(int i=1; i<=size(C); i=i+1)
+	{
+		IC[i]=C[i];
+	}
+	kill i;
+	M=SetAttribute(M,"islocallyfree",1);
+	M=SetAttribute(M,"localrank",hint);
+	M=SetAttribute(M,"FreeCoverMaps",CoverMaps);
+	M=SetAttribute(M,"FreeCover",makeFracIdeal(IC));
+
+	kill I,m,C,IC;	
+	kill R,r,RowIndices,ColIndices,done,CoverMaps;
+	return(M);
 }
 
 
@@ -2180,6 +2540,62 @@ proc FreeModule(int n)
 }
 
 
+static proc SyzM(Module M, list #)
+{
+	Module result;
+	if(nrows(M)>0)
+	{
+		def R=RingOf(M);
+		setring R;
+		ideal I;
+
+		if(size(#)==1)
+		{
+			if(typeof(#[1])=="chart")
+			{
+				if(R==RingOf(#[1]))
+				{
+					I=ValueOf(#[1]);
+				}else{
+					ERROR("Additional input needs to lie in the same ring!");
+				}
+			}else{
+				ERROR("Wrong type for the additional input!");
+			}
+		}
+
+		module m=ValueOf(M);
+		m=m,I*freemodule(nrows(m));
+		module s=syz(m);
+
+		if(ncols(M)>0)
+		{
+			matrix mat[ncols(M)][0];
+			module news=mat;
+			kill mat;
+			for(int i=1; i<=ncols(s); i=i+1)
+			{
+				news[i]=s[i][1..ncols(M)];
+			}
+			kill i;
+
+			result=news;
+			result=simplify(result,3);
+
+			kill news;
+		}else{
+			return=ZeroModule();
+		}
+
+		kill I,m,s;
+		kill R;
+	}else{
+		result=M;
+	}
+	return(result);
+}
+
+
 proc Syzygies(list Vec, Module M, list #)
 {
 	if(size(Vec)>0)
@@ -2214,7 +2630,7 @@ proc Syzygies(list Vec, Module M, list #)
 			{
 				m[ncols(m)+1]=n[i];
 			}
-			kill i;
+			kill i,n;
 		}
 		module s=syz(m);
 
@@ -2362,6 +2778,7 @@ static proc PruneModuleWithTransformation(Module M, list #)
 	intvec keepgens=1:0;
 	intvec deletegens=1:0;
 	intvec deletecols=1:0;
+	intvec ignorecols=0:ncols(m);
 	list L;
 	for(int i=1; i<=nrows(m); i=i+1)
 	{
@@ -2370,7 +2787,7 @@ static proc PruneModuleWithTransformation(Module M, list #)
 		while(k<=(ncols(m)-1) && !found)
 		{
 			k=k+1;
-			if(deg(m[i,k])==0)
+			if((deg(m[i,k])==0) && !ignorecols[k])
 			{  
 				found=1;
 				poly f=1/m[i,k];
@@ -2385,6 +2802,7 @@ static proc PruneModuleWithTransformation(Module M, list #)
 			boolgens[i]=0;
 			deletegens[size(deletegens)+1]=i;
 			deletecols[size(deletecols)+1]=k;
+			ignorecols[k]=1;
 			for(int j=1; j<=ncols(m); j=j+1)
 			{
 				if(j!=k)
@@ -2400,7 +2818,7 @@ static proc PruneModuleWithTransformation(Module M, list #)
 
 		kill k,found;
 	}
-	kill i;
+	kill i,ignorecols;
 
 	if(prunenecessary)
 	{
@@ -3003,7 +3421,7 @@ static proc printModuleMap(ModuleMap f)
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Sheaf Stuff
+//  Sheaf Stuff
 ////////////////////////////////////////////////////////////////////////////////
 
 
@@ -3187,6 +3605,43 @@ proc PruneSheaf(coherentSheaf F, list #)
 static proc MapsOfSheaf(coherentSheaf F)
 {
 	return(F.modulemaps);
+}
+
+
+static proc isLocallyFreeSH(coherentSheaf F, int hint);
+{
+	def X=SpaceOf(F);
+	int isLF=1;
+
+	int i=1;
+	while(i<=size(CoverOf(F)) && isLF)
+	{
+		if(!isLocallyFree(CoverOf(F)[i],CoverOf(X)[i],hint)){isLF=0;}
+		i=i+1;
+	}
+	kill i;
+
+	kill X;
+	return(isLF);
+}
+
+
+static proc LocallyFreeCoverSH(coherentSheaf F, int hint);
+{
+	def X=SpaceOf(F);
+
+	for(int i=1; i<=size(CoverOf(F)); i=i+1)
+	{
+		F.cover[i]=LocallyFreeCover(CoverOf(F)[i],CoverOf(X)[i],hint);
+	}
+	kill i;
+
+	F=SetAttribute(F,"islocallyfree",1);
+	F=SetAttribute(F,"localrank",hint);
+	if(hint==1){F=SetAttribute(F,"islinebundle",1);}
+
+	kill X;
+	return(F);
 }
 
 
@@ -5907,11 +6362,10 @@ F.mults;
 // Addition of divisors
 static proc AddDivisor(WeilDivisor C, WeilDivisor D)
 {
-    if(C.space!=D.space)
+    if(SpaceOf(C)!=SpaceOf(D))
     {   ERROR("Divisors incompatible.");}
     
 	WeilDivisor result=C;
-	result.space=C.space;
 	int i,k,check;
 	for(i=1; i<=size(D.schemes); i=i+1)
 	{
@@ -5980,42 +6434,326 @@ proc ComponentList(WeilDivisor D)
 }
 
 
+static proc LocalDiv(ratFunc f, chart X)
+{
+	def R=RingOf(f);
+	setring R;
+	list result;
+
+	f=SimplifyRatFunc(f);
+	list pos=LocalDivPoly(numerator(f),ValueOf(X));
+	if(deg(denominator(f))!=0)
+	{
+		list neg=LocalDivPoly(denominator(f),ValueOf(X));
+	}else{
+		list neg=list();
+	}
+
+	for(int i=1; i<=size(pos); i=i+1)
+	{
+		result[i]=list(makeChart(pos[i][1]),pos[i][2]);
+	}
+	kill i;
+
+	for(int i=1; i<=size(neg); i=i+1)
+	{
+		int found=0;
+		int j=1;
+		while(j<=size(result) && !found)
+		{
+			if(idealsEqual(ValueOf(result[j][1]),neg[i][1]))
+			{
+				found=1;
+				if(result[j][2]==neg[i][2])
+				{
+					result=delete(result,j);
+				}else{
+					result[j][2]=result[j][2]-neg[i][2];
+				}
+			}else{
+				j=j+1;
+			}
+		}
+		kill j;
+
+		if(!found)
+		{
+			result[size(result)+1]=list(makeChart(neg[i][1]),-neg[i][2]);
+		}
+
+		kill found;
+	}
+	kill i;
+
+	kill R,neg,pos;
+	return(result);
+}
+
+
+static proc LocalDivPoly(poly f, ideal I)
+{
+	if(reduce(f,std(I))==0){ERROR("Input must not lie in ideal!");}
+	list result;
+	ideal K=std(I+ideal(f));
+	if(K[1]!=1)
+	{		
+		list minass=minAss(K);
+	}else{
+		list minass=list();
+	}
+
+	if(K[1]!=1)
+	{
+	for(int i=1; i<=size(minass); i=i+1)
+	{
+		ideal P=minass[i];
+		int n=1;
+		int done=0;
+		while(!done)
+		{
+			poly r=reduce(f,std(equidimMax(P^(n+1)+I)));
+			if(r!=0){done=1;}
+			else{n=n+1;}
+			kill r;
+		}
+
+		result[i]=list(P,n);
+		kill P,n,done;
+	}
+	kill i;
+	}
+
+	kill minass,K;
+	return(result);
+}
+
+
 static proc FracIdealWDivLocal(list D, chart X)
 {
 	def R=RingOf(X);
 	setring R;
-	FracIdeal I=ideal(1);
+	FracIdeal I;
 
-	for(int i=1; i<=size(D); i=i+1)
+	if(size(D)>0)
 	{
-		I=intersect(I,FracIdealPrimeDiv(D[i][1],D[i][2],X));
-	}
-	kill i;
+		I=FracIdealPrimeDiv(D[1][1],D[1][2],X);
+		for(int i=2; i<=size(D); i=i+1)
+		{
+			I=intersect(I,FracIdealPrimeDiv(D[i][1],D[i][2],X));
+		}
+		kill i;
+	}else{I=ideal(1);}
 
 	kill R;
 	return(I);
 }
 
 
-static proc FracIdealPrimeDiv(chart P, int n, chart X)
+proc FracIdealPrimeDiv(chart P, int n, chart X)
 {
-	if(n>=0)
+	if(n<=0)
 	{
 		def R=RingOf(P);
 		setring R;
 		if(n==0){return(makeFracIdeal(ideal(1)));}
 		ideal Q=ValueOf(P);
-		ideal I=Q^n;
+		ideal I=Q^(-n);
 		I=I+ValueOf(X);
 		FracIdeal result=equidimMax(I);
 		kill I,Q;
 		kill R;
 		return(result);
 	}else{
+		def R=RingOf(P);
+		setring R;
+		ideal Q=ValueOf(P);
+		ideal I=StdOf(X);
+		Q=reduce(Q,I);
+		if(size(Q)==0){ERROR("First ideal must not be contained in the second!");}
+		int i=1;
+		int done=0;
+		poly p=1;
+		if((i<=ncols(Q)) && (!done))
+		{
+			if(Q[i]!=0)
+			{
+				p=Q[i];
+				done=1;
+			}else{
+				i=i+1;
+			}
+		}
+		kill i,done;
 
+		p=p^n;
+		list D=LocalDiv(makeratFunc(p),X);
+		int i=1;
+		int done=0;
+		while(i<=size(D) && !done)
+		{
+			if(D[i][1]==P)
+			{
+				done=1;
+				if(D[i][2]-n==0)
+				{
+					D=delete(D,i);
+				}else{
+					D[i][2]=D[i][2]-n;
+				}
+			}else{
+				i=i+1;
+			}
+		}
+		kill i;
+
+		FracIdeal J=FracIdealWDivLocal(D,X);
+		FracIdeal result=ValueOf(J),denominator(J)*p;
+
+		kill I,Q,p,J;
+		kill R;
+		return(result);
 	}
 }
 
+
+
+proc WeilDivisorToLineBundle(WeilDivisor D)
+{
+	list Components=ComponentList(D);
+	list LocalList;
+	def X=SpaceOf(D);
+	list Cover;
+	list Maps;
+	list GenRatFunc;
+
+	for(int i=1; i<=size(CoverOf(X)); i=i+1)
+	{
+		LocalList[i]=list();
+		for(int j=1; j<=size(Components); j=j+1)
+		{
+			if(!isEmpty(CoverOf(Components[j][1])[i]))
+			{
+				LocalList[i][size(LocalList[i])+1]=list(CoverOf(Components[j][1])[i],Components[j][2]);
+			}
+		}
+		kill j;
+
+		Cover[i]=FracIdealToModule(FracIdealWDivLocal(LocalList[i],CoverOf(X)[i]),CoverOf(X)[i]);
+		GenRatFunc[i]=Attribute(Cover[i],"GenContext");
+	}
+	kill i;
+
+	for(int i=1; i<=size(Cover); i=i+1)
+	{
+		Maps[i]=list();
+		for(int j=1; j<=size(Cover); j=j+1)
+		{
+			list Rules;
+			chartmap f=maps(j,i,X);
+			def R=RingOf(Cover[j]);
+			setring R;
+			ideal domain=Domain(f);
+
+			for(int k=1; k<=size(RulesOf(f)); k=k+1)
+			{
+				Rules[k]=list();
+				poly p=domain[k];
+				if(reduce(p,StdOf(CoverOf(X)[j]))!=0)
+				{
+					intvec posp=0:0;
+					for(int l=1; l<=size(LocalList[j]); l=l+1)
+					{
+						if(reduce(p,StdOf(LocalList[j][l][1]))==0){posp[size(posp)+1]=l;}
+					}
+					kill l;
+
+					for(int l=1; l<=size(GenRatFunc[i]); l=l+1)
+					{
+						ratFunc F=SimplifyRatFunc(ratFuncCompratFunc(GenRatFunc[i][l],RulesOf(f)[k]));
+						list DL=LocalDiv(F,CoverOf(X)[j]);
+						int d=0;
+						for(int m=1; m<=size(posp); m=m+1)
+						{
+							int found=0;
+							int n=1;
+							while(n<=size(DL) && !found)
+							{
+								if(LocalList[j][posp[m]][1]==DL[n][1])
+								{
+									found=1;
+									if(LocalList[j][posp[m]][2]+DL[n][2]+d<0)
+									{
+										d=-(LocalList[j][posp[m]][2]+DL[n][2]);
+									}
+								}else{
+									n=n+1;
+								}
+							}
+
+							if(!found)
+							{
+								if(LocalList[j][posp[m]][2]+d<0)
+								{
+									d=-(LocalList[j][posp[m]][2]);
+								}
+							}
+
+							kill n,found;
+						}
+						kill m;
+
+						poly s=denominator(F);
+						for(int m=1; m<=size(GenRatFunc[j]); m=m+1)
+						{
+							s=lcm(s,denominator(GenRatFunc[j][m]));
+						}
+						kill m;
+						ideal I;
+						for(int m=1; m<=size(GenRatFunc[j]); m=m+1)
+						{
+							I[m]=-s/denominator(GenRatFunc[j][m])*numerator(GenRatFunc[j][m]);
+						}
+						kill m;
+
+						I=I,ideal(s/denominator(F)*numerator(F)*p^d);
+						I=I,ValueOf(CoverOf(X)[j]);
+
+						module S=syz(I);
+						int m=1;
+						int found=0;
+						while((m<=ncols(S)) && !found)
+						{
+							if(S[m][size(GenRatFunc[j])+1]!=0)
+							{
+								found=1;
+								Rules[k][l]=makeVector(S[m][1..size(GenRatFunc[j])],S[m][size(GenRatFunc[j])+1]*p^d);
+							}else{m=m+1;}
+						}
+
+						if(!found){ERROR("Something went wrong!");}
+
+						kill DL,d,F,s,S,I,m,found;
+					}
+					kill l;
+
+					kill posp;
+				}
+				kill p;
+			}
+			kill k;
+
+			Maps[i][j]=makeModuleMap(Cover[i],Cover[j],Rules);
+			kill domain;
+			kill f,Rules,R;
+		}
+		kill j;
+	}
+	kill i;
+
+	coherentSheaf result=makeSheaf(Cover,Maps,X);
+	kill ComponentList,LocalList,X,Cover,Maps,GenRatFunc;
+	return(result);
+}
 
 
 
@@ -6255,35 +6993,41 @@ static proc diffRatFunc(ratFunc f, int k)
 
 proc makeFracIdeal(ideal i, list #)
 "USAGE: makeFracIdeal(I); I ideal[, poly f]
-RETURN: make a fractinal ideal f^(-1)*I
+RETURN: make a fractional ideal f^(-1)*I
 EXAMPLE: example makeFracIdeal, shows an example"
 {
-FracIdeal I;
-I.value=i;
-if(size(#)>0)
-{
-	if(size(#)==1)
+	FracIdeal I;
+	I.value=i;
+	if(size(#)>0)
 	{
-		if(typeof(#[1])=="poly"){I.den=#[1];}
-		if(typeof(#[1])=="AttribTable")
+		if(size(#)==1)
 		{
-			I.attributes=#[1];
-			I.den=1;
+			if(typeof(#[1])=="poly" || typeof(#[1])=="int" || typeof(#[1])=="bigint"){I.den=#[1];}
+			if(typeof(#[1])=="AttribTable")
+			{
+				I.attributes=#[1];
+				I.den=1;
+			}
+			if(typeof(#[1])!="poly" && typeof(#[1])!="AttribTable"){ERROR("Wrong additional inputs, expected poly or AttribTable, got "+typeof(#[1])+"!");}
 		}
-		if(typeof(#[1])!="poly" && typeof(#[1])!="AttribTable"){ERROR("Wrong additional inputs!");}
+		if(size(#)==2)
+		{
+			if(!(typeof(#[1])=="poly" || typeof(#[1])=="int" || typeof(#[1])=="bigint") || typeof(#[2])!="AttribTable"){ERROR("Wrong additional inputs!");}
+			else{
+				I.attributes=#[2];
+				I.den=#[1];
+			}
+		}
+	}else{
+		I.den=1;
 	}
-	if(size(#)==2)
+
+	if(attrib(i,"isSB"))
 	{
-		if(typeof(#[1])!="poly" || typeof(#[2])!="AttribTable"){ERROR("Wrong additional inputs!");}
-		else{
-			I.attributes=#[2];
-			I.den=#[1];
-		}
+		I=SetAttribute(I,"isSB",1);
 	}
-}else{
-	I.den=1;
-}
-return(I);
+
+	return(I);
 }
 example
 {"EXAMPLE:";
@@ -6297,6 +7041,99 @@ string(I);
 }
 
 
+proc FracIdealToModule(FracIdeal I, chart X)
+{
+	def R=RingOf(I);
+	setring R;
+	Module M;
+
+	AttribTable A;
+	list GenContext;
+	A=SetAttribute(A,"fromFracIdeal",1);
+	for(int i=1; i<=ncols(I); i=i+1)
+	{
+		GenContext[i]=makeratFunc(ValueOf(I)[i],denominator(I));
+	}
+	kill i;
+	A=SetAttribute(A,"GenContext",GenContext);
+
+	ideal J=ValueOf(I),ValueOf(X);
+	module s=syz(J);
+	matrix mat[ncols(I)][0];
+	module m=mat;
+	kill mat;
+
+	for(int i=1; i<=ncols(s); i=i+1)
+	{
+		m[i]=s[i][1..ncols(I)];
+	}
+	kill i;
+
+	M=m,A;
+	M=simplify(M,2);
+
+	kill J,s,m;
+	kill R,A,GenContext;
+	return(M);
+}
+
+
+static proc NcolsFI(FracIdeal I)
+{
+	def R=RingOf(I);
+	setring R;
+	int n=ncols(ValueOf(I));
+	kill R;
+	return(n);
+}
+
+
+static proc SizeFI(FracIdeal I)
+{
+	def R=RingOf(I);
+	setring R;
+	int n=size(ValueOf(I));
+	kill R;
+	return(n);
+}
+
+
+static proc SyzFI(FracIdeal I)
+{
+	def R=RingOf(I);
+	setring R;
+	Module M=syz(ValueOf(I));
+	kill R;
+	return(M);
+}
+
+
+static proc StdOfFI(FracIdeal C)
+{
+	if(isAttribute(C,"isSB"))
+	{
+		if(Attribute(C,"isSB"))
+		{
+			def R=RingOf(C);
+			setring R;
+			ideal I=ValueOf(C);
+			attrib(I,"isSB",1);
+			return(I);
+		}else{
+			def R=RingOf(C);
+			setring R;
+			ideal I=std(ValueOf(C));
+			return(I);
+		}
+	}else{
+		def R=RingOf(C);
+		setring R;
+		ideal I=std(ValueOf(C));
+		return(I);
+	}
+}
+
+
 static proc DenFI(FracIdeal I)
 {
 	return(I.den);
@@ -6305,7 +7142,7 @@ static proc DenFI(FracIdeal I)
 
 static proc printFracIdeal(FracIdeal I)
 {
-string(I);
+	string(I);
 }
 
 
@@ -6348,7 +7185,7 @@ static proc IntersectFracIdeal(FracIdeal I, FracIdeal J)
 {
 	def S=I.r_value;
 	setring S;
-	FracIdeal IcapJ=intersect(denominator(J)*ValueOf(I),denominator(I)*ValueOf(J)),denominator(I)*denominator(J);
+	FracIdeal IcapJ=ideal(intersect(denominator(J)*ValueOf(I),denominator(I)*ValueOf(J))),poly(denominator(I)*denominator(J));
 	kill S;
 	return(IcapJ);
 }
@@ -6929,6 +7766,174 @@ psi.chartmaps;
 }
 
 
+proc MorphismFromLineBundle(coherentSheaf L)
+{
+	list GS=GlobalSections(L);
+	if(size(GS)<2){ERROR("Not enough global sections!");}
+	
+	scheme Preim=SpaceOf(L);
+
+	def R=RingOf(CoverOf(Preim)[1]);
+	setring R;
+	string s=string(minpoly);
+	string vst="x(1.."+string(size(GS))+")";
+	def S=changevar(vst,R);
+	setring S;
+	execute("minpoly="+s+";");
+	scheme Im=makeProjScheme(ideal(0));
+	kill R,s,S,vst;
+
+	list Maps;
+
+	for(int i=1; i<=size(CoverOf(Preim)); i=i+1)
+	{
+		list Rules;
+		list DomList;
+		list RatFuncs;
+		def R=RingOf(CoverOf(L)[i]);
+		setring R;
+		ideal Dom=ValueOf(Attribute(CoverOf(L)[i],"FreeCover"));
+		list FreeCoverMaps=Attribute(CoverOf(L)[i],"FreeCoverMaps");
+
+		for(int k=1; k<=ncols(Dom); k=k+1)
+		{
+			RatFuncs[k]=list();
+			for(int l=1; l<=size(GS); l=l+1)
+			{
+				ratFunc F=0;
+				for(int a=1; a<=size(FreeCoverMaps[k]); a=a+1)
+				{
+					F=F+FreeCoverMaps[k][a][1]*GS[l][i][a];
+				}
+				kill a;
+				RatFuncs[k][l]=F;
+				kill F;
+			}
+			kill l;
+		}
+		kill k;
+
+		for(int j=1; j<=size(CoverOf(Im)); j=j+1)
+		{
+			Rules[j]=list();
+			DomList[j]=list();
+			for(int k=1; k<=ncols(Dom); k=k+1)
+			{
+				Rules[j][k]=list();
+				if(RatFuncs[k][j]!=0)
+				{
+					poly p=1;
+					for(int l=1; l<=size(GS); l=l+1)
+					{
+						if(j!=l)
+						{
+							ratFunc F=SimplifyRatFunc(RatFuncs[k][l]/RatFuncs[k][j]);
+							Rules[j][k][size(Rules[j][k])+1]=F;
+							p=lcm(p,denominator(F));
+							kill F;
+						}
+					}
+					DomList[j][k]=sqrfree(Dom[k]*p,3);
+					kill p;
+				}else{
+					DomList[j][k]=0;
+				}
+				kill l;
+			}
+			kill k;
+
+			for(int k=size(DomList[j]); k>=1; k=k-1)
+			{
+				int l=1;
+				int done=0;
+				while(l<=size(DomList[j]) && !done)
+				{
+					if(l!=k)
+					{
+						if(reduce(DomList[j][k],DomList[j][l])==0)
+						{
+							done=1;
+							DomList[j]=delete(DomList[j],k);
+							Rules[j]=delete(Rules[j],k);
+						}else{
+							l=l+1;
+						}
+					}else{
+						l=l+1;
+					}
+				}
+				kill l,done;
+			}
+			kill k;
+
+			ideal D=0;
+			for(int k=size(DomList[j]); k>=1; k=k-1)
+			{
+				D[k]=DomList[j][k];
+			}
+			kill k;
+
+			Maps[size(Maps)+1]=list(makeChartmap(CoverOf(Preim)[i],CoverOf(Im)[j],D,Rules[j]),i,j);
+			kill D;
+		}
+		kill j;
+
+		/*for(int k=1; k<=ncols(Dom); k=k+1)
+		{
+			list RatFuncs;
+			for(int l=1; l<=size(GS); l=l+1)
+			{
+				ratFunc F=0;
+				for(int a=1; a<=size(FreeCoverMaps[k]); a=a+1)
+				{
+					F=F+FreeCoverMaps[k][a][1]*GS[l][i][a];
+				}
+				kill a;
+				RatFuncs[l]=F;
+				kill F;
+			}
+			kill l;
+
+			for(int j=1; j<=size(CoverOf(Im)); j=j+1)
+			{
+				Rules[j][k]=list();
+				if(RatFuncs[j]!=0)
+				{
+					poly p=1;
+					for(int l=1; l<=size(GS); l=l+1)
+					{
+						if(j!=l)
+						{
+							ratFunc F=SimplifyRatFunc(RatFuncs[l]/RatFuncs[j]);
+							Rules[j][k][size(Rules[j][k])+1]=F;
+							p=lcm(p,denominator(F));
+							kill F;
+						}
+					}
+					DomList[j][k]=sqrfree(p,3);
+					kill p;
+				}else{
+					DomList[j][k]=0;
+				}
+				kill l;
+			}
+			kill j;
+
+			kill RatFuncs;
+		}
+		kill k;*/
+
+		kill Dom;
+		kill RatFuncs,DomList,Rules,FreeCoverMaps,R;
+	}
+	kill i;
+
+	morphism result=makeMorphism(Preim,Im,Maps);
+	kill GS,Maps,Preim,Im;
+	return(result);
+}
+
+
 static proc RulesM(morphism f)
 {
 	return(f.chartmaps);
@@ -7320,7 +8325,7 @@ Pi.chartmaps;
 
 
 
-proc Domain(def phi)
+proc MaxDomain(def phi)
 {
 	if(typeof(phi)=="affRatMap")
 	{
@@ -7454,7 +8459,7 @@ EXAMPLE: example InvImage; gives an example"
 	{
 		I=I+ideal(L[i].num*p/L[i].den);
 	}
-	I=sat(I,ValueOf(Domain(phi)));
+	I=sat(I,ValueOf(MaxDomain(phi)));
 	affVariety result=I;
 	return(result);
    }
@@ -7481,7 +8486,7 @@ EXAMPLE: example InvImage; gives an example"
 		P[i]=var(i);
 	}
 	ideal J=f(I)+ValueOf(PreimageSpace(phi));
-	J=sat(J,ValueOf(Domain(phi))*P);
+	J=sat(J,ValueOf(MaxDomain(phi))*P);
 
 	projVariety result=J;
 	return(result);

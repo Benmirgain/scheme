@@ -53,6 +53,8 @@ Vector W=w,b;
 Vector U=u,a+b;
 ratFunc r=b,a;
 V;W;U;
+V[2];
+W[2];
 V+W;
 V+U;
 U-W+V;
